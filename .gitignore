@@ -1,0 +1,67 @@
+# ===========================
+# Unreal Engine Ignore Files
+# ===========================
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# Unreal Project Files
+*.sln
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.swn
+
+# Unreal Engine Plugins Cache
+Plugins/*/Intermediate/
+Plugins/*/Binaries/
+
+# ===========================
+# Rider IDE Ignore Files
+# ===========================
+.idea/                  # Rider project settings
+*.iml                   # Module files
+*.ipr                   # Project files
+*.iws                   # Workspace files
+
+# Rider Logs
+.idea/**/workspace.xml  # Workspace settings
+.idea/**/tasks.xml      # Task settings
+.idea/**/shelf/         # Local changes history
+.idea/**/dataSources/   # Database settings
+.idea/**/dataSources.ids
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/gradle.xml
+.idea/**/sonarlint/
+
+# Rider cache and index files
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/vcs.xml
+.idea/xcode.xml
+.idea/httpRequests/
+.idea/scopes/
+.idea/compiler.xml
+.idea/artifacts/
+
+# Rider File-Based Index
+.idea/**/workspace/
+.idea/**/storage.vfs
+.idea/**/webSymbols/
+
+# Rider Temporary Files
+*.rider.log
+*.rider.lock
+*.rider.temp
+*.rider.workspace
