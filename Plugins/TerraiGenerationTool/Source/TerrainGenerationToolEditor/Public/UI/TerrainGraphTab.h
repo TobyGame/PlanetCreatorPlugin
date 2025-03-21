@@ -1,0 +1,10 @@
+﻿#pragma once
+
+#include "TerrainTabFactory.h"
+
+class FTerrainGraphTab : public FTerrainTabFactory
+{
+public:
+	FTerrainGraphTab(TSharedPtr<FTerrainEditor> InEditor);
+	virtual TSharedRef<SWidget> CreateTabBody(const FWorkflowTabSpawnInfo& Info) const override;
+};
