@@ -1,10 +1,18 @@
-﻿using UnrealBuildTool;
+﻿using System.IO;
+using UnrealBuildTool;
 
 public class TerrainGenerationToolEditor : ModuleRules
 {
     public TerrainGenerationToolEditor(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        PrivateIncludePaths.AddRange(
+            new string[]
+            {
+                Path.Combine(ModuleDirectory, "Public/UI"),
+            }
+        );
 
         PublicDependencyModuleNames.AddRange(
             new string[]
@@ -24,7 +32,8 @@ public class TerrainGenerationToolEditor : ModuleRules
                 "UnrealEd",
                 "GraphEditor",
                 "EditorStyle",
-                "TerraiGenerationTool",
+                "PropertyEditor",
+                "TerrainGenerationTool",
             }
         );
     }

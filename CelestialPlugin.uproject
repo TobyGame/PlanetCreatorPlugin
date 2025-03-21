@@ -19,7 +19,7 @@
 			]
 		},
 		{
-			"Name": "TerraiGenerationTool",
+			"Name": "TerrainGenerationTool",
 			"Enabled": true
 		}
 	]

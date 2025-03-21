@@ -1,6 +1,6 @@
-﻿#include "UI/TerrainEditor.h"
-#include "UI/TerrainEditor.h"
-#include "UI/TerrainEditorMode.h"
+﻿#include "TerrainEditor.h"
+#include "TerrainEditor.h"
+#include "TerrainEditorMode.h"
 #include "Modules/ModuleManager.h"
 #include "EditorStyleSet.h"
 

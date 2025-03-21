@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class TerraiGenerationTool : ModuleRules
+public class TerrainGenerationTool : ModuleRules
 {
-	public TerraiGenerationTool(ReadOnlyTargetRules Target) : base(Target)
+	public TerrainGenerationTool(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 

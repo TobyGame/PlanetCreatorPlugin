@@ -9,7 +9,7 @@
  */
 
 UCLASS()
-class TERRAIGENERATIONTOOL_API UTerrainAsset : public UDataAsset
+class TERRAINGENERATIONTOOL_API UTerrainAsset : public UDataAsset
 {
 	GENERATED_BODY()
 
