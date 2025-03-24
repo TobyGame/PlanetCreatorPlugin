@@ -7,7 +7,4 @@ class FTerrainGeneralPropertiesTab : public FTerrainTabFactory
 public:
 	FTerrainGeneralPropertiesTab(TSharedPtr<FTerrainEditor> InEditor);
 	virtual TSharedRef<SWidget> CreateTabBody(const FWorkflowTabSpawnInfo& Info) const override;
-
-private:
-	TSharedPtr<class IDetailsView> DetailsView;
 };

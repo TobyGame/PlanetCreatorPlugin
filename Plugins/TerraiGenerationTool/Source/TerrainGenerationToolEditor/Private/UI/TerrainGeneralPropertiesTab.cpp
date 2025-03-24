@@ -18,7 +18,7 @@ TSharedRef<SWidget> FTerrainGeneralPropertiesTab::CreateTabBody(const FWorkflowT
 	Args.bHideSelectionTip = false;
 	Args.bLockable = false;
 
-	DetailsView = PropertyEditorModule.CreateDetailView(Args);
+	TSharedPtr<IDetailsView> DetailsView = PropertyEditorModule.CreateDetailView(Args);
 
 	if (TerrainEditor.IsValid())
 	{
