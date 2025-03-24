@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "WorkflowOrientedApp/WorkflowCentricApplication.h"
 
+class UTerrainAsset;
 class FTerrainEditorMode;
 
 /**
@@ -16,13 +17,13 @@ public:
 	virtual FName GetToolkitFName() const override { return FName("TerrainEditor"); }
 	virtual FText GetBaseToolkitName() const override { return FText::FromString("Terrain Editor"); }
 	virtual FString GetWorldCentricTabPrefix() const override { return TEXT("TerrainEditor"); }
-	UObject* GetEdittingObject() const { return EditingObject; }
+	UTerrainAsset* GetEditingAsset() const { return EditingObject; }
 
 protected:
 	virtual void RegisterTabSpawners(const TSharedRef<FTabManager>& TabManager) override;
 	virtual void UnregisterTabSpawners(const TSharedRef<FTabManager>& TabManager) override;
 
 private:
-	UObject* EditingObject;
+	UTerrainAsset* EditingObject = nullptr;
 	TSharedPtr<FTerrainEditorMode> TerrainEditorMode;
 };

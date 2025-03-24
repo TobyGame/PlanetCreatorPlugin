@@ -22,7 +22,7 @@ TSharedRef<SWidget> FTerrainGeneralPropertiesTab::CreateTabBody(const FWorkflowT
 
 	if (TerrainEditor.IsValid())
 	{
-		if (UObject* EditingObject = TerrainEditor.Pin()->GetEdittingObject())
+		if (UObject* EditingObject = TerrainEditor.Pin()->GetEditingAsset())
 		{
 			DetailsView->SetObject(EditingObject);
 		}
