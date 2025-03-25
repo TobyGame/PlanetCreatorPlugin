@@ -18,20 +18,26 @@ FTerrainEditorMode::FTerrainEditorMode(TSharedPtr<FTerrainEditor> InEditor)
 	TabsSet.RegisterFactory(MakeShareable(new FTerrainLoggerTab(InEditor)));
 
 	TabLayout = FTabManager::NewLayout("TerrainEditorMode_Layout")
-		->AddArea
-		(
+		->AddArea(
 			FTabManager::NewPrimaryArea()
 			->SetOrientation(Orient_Horizontal)
-			->Split
-			(
-				FTabManager::NewStack()
-				->SetSizeCoefficient(0.75f)
-				->SetHideTabWell(false)
-				->AddTab("ViewportTab", ETabState::OpenedTab)
-				->AddTab("GraphTab", ETabState::OpenedTab)
+			->Split(
+				FTabManager::NewSplitter()
+				->SetOrientation(Orient_Vertical)
+				->Split(
+					FTabManager::NewStack()
+					->AddTab("ViewportTab", ETabState::OpenedTab)
+					->SetSizeCoefficient(0.6f)
+					->SetHideTabWell(true)
+				)
+				->Split(
+					FTabManager::NewStack()
+					->AddTab("GraphTab", ETabState::OpenedTab)
+					->SetSizeCoefficient(0.4f)
+					->SetHideTabWell(false)
+				)
 			)
-			->Split
-			(
+			->Split(
 				FTabManager::NewStack()
 				->SetSizeCoefficient(0.25f)
 				->SetHideTabWell(false)
