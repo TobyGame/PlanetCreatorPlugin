@@ -12,7 +12,8 @@ public class TerrainGenerationTool : ModuleRules
 			new string[]
 			{
 				"Core",
-
+				"CoreUObject",
+				"Engine",
 			}
 			);
 			
@@ -20,9 +21,7 @@ public class TerrainGenerationTool : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"CoreUObject",
-				"Engine",
-				"Projects",
+
 			}
 			);
 	}
