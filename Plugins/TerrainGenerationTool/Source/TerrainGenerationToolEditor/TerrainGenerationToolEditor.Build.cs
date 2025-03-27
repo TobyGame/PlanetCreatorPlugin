@@ -17,7 +17,6 @@ public class TerrainGenerationToolEditor : ModuleRules
                 "UnrealEd",
                 "GraphEditor",
                 "EditorStyle",
-                "AssetTools",
                 "Kismet",
                 "KismetCompiler",
                 "BlueprintGraph",

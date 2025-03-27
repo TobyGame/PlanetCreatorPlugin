@@ -17,4 +17,4 @@ void FTerrainGenerationToolModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FTerrainGenerationToolModule, TerraiGenerationTool)
+IMPLEMENT_MODULE(FTerrainGenerationToolModule, TerrainGenerationTool)
