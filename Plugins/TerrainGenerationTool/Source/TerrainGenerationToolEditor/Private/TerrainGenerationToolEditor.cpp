@@ -1,4 +1,7 @@
 ﻿#include "TerrainGenerationToolEditor.h"
+#include "AssetToolsModule.h"
+#include "AssetTools/TerrainAssetFactory.h"
+#include "AssetTools/AssetTypeActions_TerrainAsset.h"
 
 #define LOCTEXT_NAMESPACE "FTerrainGenerationToolEditorModule"
 
