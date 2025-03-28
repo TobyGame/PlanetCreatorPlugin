@@ -6,10 +6,18 @@ public class TerrainGenerationToolEditor : ModuleRules
     public TerrainGenerationToolEditor(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
                 "Core",
+            }
+        );
+
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "Projects",
                 "CoreUObject",
                 "Engine",
                 "Slate",
@@ -17,19 +25,7 @@ public class TerrainGenerationToolEditor : ModuleRules
                 "UnrealEd",
                 "GraphEditor",
                 "EditorStyle",
-                "Kismet",
-                "KismetCompiler",
-                "BlueprintGraph",
-                "WorkspaceMenuStructure",
-                "ApplicationCore",
-            }
-            );
-
-
-        PrivateDependencyModuleNames.AddRange(
-            new string[]
-            {
-
+                "PropertyEditor",
                 "TerrainGenerationTool",
             }
         );
