@@ -11,6 +11,7 @@ public class TerrainGenerationToolEditor : ModuleRules
             new string[]
             {
                 Path.Combine(ModuleDirectory, "Public/UI"),
+                Path.Combine(ModuleDirectory, "Public/UI/Tabs"),
             }
         );
 
