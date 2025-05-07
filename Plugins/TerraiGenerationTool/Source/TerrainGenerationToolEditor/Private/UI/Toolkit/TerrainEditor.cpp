@@ -1,5 +1,5 @@
-﻿#include "TerrainEditor.h"
-#include "TerrainEditorMode.h"
+﻿#include "Toolkit/TerrainEditor.h"
+#include "Toolkit/TerrainEditorMode.h"
 #include "Modules/ModuleManager.h"
 #include "Assets/TerrainAsset.h"
 
@@ -24,14 +24,14 @@ void FTerrainEditor::InitTerrainEditor(const EToolkitMode::Type Mode, const TSha
 	SetCurrentMode(TEXT("TerrainEditorMode"));
 }
 
-void FTerrainEditor::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
+UTerrainGraph* FTerrainEditor::GetGraph() const
 {
-	FWorkflowCentricApplication::RegisterTabSpawners(InTabManager);
-}
+	if (TerrainGraph)
+	{
+		return TerrainGraph;
+	}
 
-void FTerrainEditor::UnregisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
-{
-	FWorkflowCentricApplication::UnregisterTabSpawners(InTabManager);
+	return nullptr;
 }
 
 #undef LOCTEXT_NAMESPACE

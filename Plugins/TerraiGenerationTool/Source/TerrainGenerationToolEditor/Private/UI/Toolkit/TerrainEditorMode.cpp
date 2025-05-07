@@ -1,5 +1,5 @@
-﻿#include "TerrainEditorMode.h"
-#include "TerrainEditor.h"
+﻿#include "Toolkit/TerrainEditorMode.h"
+#include "Toolkit/TerrainEditor.h"
 #include "TerrainGraphTab.h"
 #include "TerrainViewportTab.h"
 #include "TerrainNodePropertiesTab.h"
@@ -9,15 +9,15 @@
 #define LOCTEXT_NAMESPACE "TerrainEditorMode"
 
 FTerrainEditorMode::FTerrainEditorMode(TSharedPtr<FTerrainEditor> InEditor)
-	: FApplicationMode("TerrainEditorMode"), TerrainEditorWeak(InEditor)
+	: FApplicationMode("TerrainEditorMode"), Editor(InEditor)
 {
-	TabsSet.RegisterFactory(MakeShareable(new FTerrainGraphTab(InEditor)));
-	TabsSet.RegisterFactory(MakeShareable(new FTerrainViewportTab(InEditor)));
-	TabsSet.RegisterFactory(MakeShareable(new FTerrainNodePropertiesTab(InEditor)));
-	TabsSet.RegisterFactory(MakeShareable(new FTerrainGeneralPropertiesTab(InEditor)));
-	TabsSet.RegisterFactory(MakeShareable(new FTerrainLoggerTab(InEditor)));
+	TabsSet.RegisterFactory(MakeShared<FTerrainGraphTab>(InEditor));
+	TabsSet.RegisterFactory(MakeShared<FTerrainViewportTab>(InEditor));
+	TabsSet.RegisterFactory(MakeShared<FTerrainNodePropertiesTab>(InEditor));
+	TabsSet.RegisterFactory(MakeShared<FTerrainGeneralPropertiesTab>(InEditor));
+	TabsSet.RegisterFactory(MakeShared<FTerrainLoggerTab>(InEditor));
 
-	TabLayout = FTabManager::NewLayout("TerrainEditorMode_Layout")
+	TabLayout = FTabManager::NewLayout("TerrainEditorMode_Layout_v1")
 		->AddArea(
 			FTabManager::NewPrimaryArea()
 			->SetOrientation(Orient_Horizontal)
@@ -27,36 +27,38 @@ FTerrainEditorMode::FTerrainEditorMode(TSharedPtr<FTerrainEditor> InEditor)
 				->Split(
 					FTabManager::NewStack()
 					->AddTab("ViewportTab", ETabState::OpenedTab)
-					->SetSizeCoefficient(0.6f)
 					->SetHideTabWell(true)
 				)
 				->Split(
 					FTabManager::NewStack()
 					->AddTab("GraphTab", ETabState::OpenedTab)
-					->SetSizeCoefficient(0.4f)
-					->SetHideTabWell(false)
+				)
+				->Split(
+					FTabManager::NewStack()
+					->AddTab("LoggerTab", ETabState::ClosedTab)
 				)
 			)
 			->Split(
-				FTabManager::NewStack()
-				->SetSizeCoefficient(0.25f)
-				->SetHideTabWell(false)
-				->AddTab("NodePropertiesTab", ETabState::OpenedTab)
-				->AddTab("GeneralPropertiesTab", ETabState::OpenedTab)
+				FTabManager::NewSplitter()
+				->SetOrientation(Orient_Vertical)
+				->Split(
+					FTabManager::NewStack()
+					->AddTab("NodePropertiesTab", ETabState::OpenedTab)
+					->AddTab("GeneralPropertiesTab", ETabState::OpenedTab)
+				)
 			)
 		);
 }
 
 void FTerrainEditorMode::RegisterTabFactories(TSharedPtr<FTabManager> InTabManager)
 {
-	TSharedPtr<FTerrainEditor> Editor = TerrainEditorWeak.Pin();
+	TSharedPtr<FTerrainEditor> Ed = Editor.Pin();
 
-	if (!Editor.IsValid())
+	if (!Ed.IsValid())
 		return;
 
-	Editor->PushTabFactories(TabsSet);
+	Ed->PushTabFactories(TabsSet);
 	FApplicationMode::RegisterTabFactories(InTabManager);
-
 }
 
 void FTerrainEditorMode::PreDeactivateMode()

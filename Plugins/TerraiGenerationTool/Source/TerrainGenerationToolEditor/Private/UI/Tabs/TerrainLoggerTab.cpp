@@ -1,7 +1,7 @@
 ﻿#include "TerrainLoggerTab.h"
 
 FTerrainLoggerTab::FTerrainLoggerTab(TSharedPtr<FTerrainEditor> InEditor)
-	: FTerrainTabFactory(FName("LoggerTab"), InEditor)
+	: FTerrainTabFactory(FName("LoggerTab"), InEditor), Editor(InEditor)
 {}
 
 TSharedRef<SWidget> FTerrainLoggerTab::CreateTabBody(const FWorkflowTabSpawnInfo& Info) const

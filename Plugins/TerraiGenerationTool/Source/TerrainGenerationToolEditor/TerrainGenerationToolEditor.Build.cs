@@ -35,6 +35,7 @@ public class TerrainGenerationToolEditor : ModuleRules
                 "EditorStyle",
                 "PropertyEditor",
                 "TerrainGenerationTool",
+                "StructUtils",
             }
         );
     }

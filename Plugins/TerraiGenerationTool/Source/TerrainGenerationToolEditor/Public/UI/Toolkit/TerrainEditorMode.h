@@ -18,6 +18,6 @@ public:
 	virtual void PostActivateMode() override;
 
 private:
-	TWeakPtr<FTerrainEditor> TerrainEditorWeak;
+	TWeakPtr<FTerrainEditor> Editor;
 	FWorkflowAllowedTabSet TabsSet;
 };

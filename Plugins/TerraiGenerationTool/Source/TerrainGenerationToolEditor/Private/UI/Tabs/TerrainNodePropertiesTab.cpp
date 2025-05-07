@@ -1,7 +1,7 @@
 ﻿#include "TerrainNodePropertiesTab.h"
 
 FTerrainNodePropertiesTab::FTerrainNodePropertiesTab(TSharedPtr<FTerrainEditor> InEditor)
-	: FTerrainTabFactory(FName("NodePropertiesTab"), InEditor)
+	: FTerrainTabFactory(FName("NodePropertiesTab"), InEditor), Editor(InEditor)
 {}
 
 TSharedRef<SWidget> FTerrainNodePropertiesTab::CreateTabBody(const FWorkflowTabSpawnInfo& Info) const

@@ -1,10 +1,10 @@
 ﻿#include "TerrainGraphTab.h"
-#include "TerrainEditor.h"
-#include "Graph/Core/TerrainGraph.h"
-#include "Graph/Core/TerrainGraphSchema.h"
+#include "Toolkit/TerrainEditor.h"
+#include "Graph/TerrainGraph.h"
+#include "Graph/TerrainGraphSchema.h"
 
 FTerrainGraphTab::FTerrainGraphTab(TSharedPtr<FTerrainEditor> InEditor)
-	: FTerrainTabFactory(FName("GraphTab"), InEditor), TerrainEditor(InEditor)
+	: FTerrainTabFactory(FName("GraphTab"), InEditor), Editor(InEditor)
 {
 	TabLabel = FText::FromString("Graph");
 	bIsSingleton = true;
@@ -12,7 +12,7 @@ FTerrainGraphTab::FTerrainGraphTab(TSharedPtr<FTerrainEditor> InEditor)
 
 TSharedRef<SWidget> FTerrainGraphTab::CreateTabBody(const FWorkflowTabSpawnInfo& Info) const
 {
-	TSharedPtr<FTerrainEditor> EditorPtr = TerrainEditor.Pin();
+	TSharedPtr<FTerrainEditor> EditorPtr = Editor.Pin();
 	if (!EditorPtr.IsValid())
 	{
 		return SNew(STextBlock).Text(FText::FromString("Invalid Editor context"));
@@ -24,12 +24,8 @@ TSharedRef<SWidget> FTerrainGraphTab::CreateTabBody(const FWorkflowTabSpawnInfo&
 	FGraphAppearanceInfo Appearance;
 	Appearance.CornerText = FText::FromString("Terrain Graph");
 
-	SGraphEditor::FGraphEditorEvents Events;
-	Events.OnSelectionChanged = SGraphEditor::FOnSelectionChanged::CreateSP(EditorPtr.ToSharedRef(), &FTerrainEditor::OnGraphSelectionChanged);
-
 	return SNew(SGraphEditor)
 		.GraphToEdit(TerrainGraph)
 		.Appearance(Appearance)
-		.GraphEvents(Events)
 		.ShowGraphStateOverlay(false);
 }

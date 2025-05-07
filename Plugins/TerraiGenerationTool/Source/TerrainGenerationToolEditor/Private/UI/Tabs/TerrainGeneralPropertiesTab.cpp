@@ -2,12 +2,15 @@
 #include "PropertyEditorModule.h"
 #include "IDetailsView.h"
 #include "Modules/ModuleManager.h"
-#include "TerrainEditor.h"
+#include "Toolkit/TerrainEditor.h"
 #include "Assets/TerrainAsset.h"
 
 FTerrainGeneralPropertiesTab::FTerrainGeneralPropertiesTab(TSharedPtr<FTerrainEditor> InEditor)
-	: FTerrainTabFactory(FName("GeneralPropertiesTab"), InEditor)
-{}
+	: FTerrainTabFactory(FName("GeneralPropertiesTab"), InEditor), Editor(InEditor)
+{
+	TabLabel = FText::FromString("General Properties");
+	ViewMenuDescription = TabLabel;
+}
 
 TSharedRef<SWidget> FTerrainGeneralPropertiesTab::CreateTabBody(const FWorkflowTabSpawnInfo& Info) const
 {

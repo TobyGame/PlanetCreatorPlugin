@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "TerrainTabFactory.h"
+#include "Toolkit/TerrainTabFactory.h"
 
 class FTerrainGraphTab : public FTerrainTabFactory
 {
@@ -9,5 +9,5 @@ public:
 	virtual TSharedRef<SWidget> CreateTabBody(const FWorkflowTabSpawnInfo& Info) const override;
 
 private:
-	TWeakPtr<FTerrainEditor> TerrainEditor;
+	TWeakPtr<FTerrainEditor> Editor;
 };

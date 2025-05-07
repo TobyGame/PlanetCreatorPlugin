@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "Graph/TerrainGraph.h"
 #include "WorkflowOrientedApp/WorkflowCentricApplication.h"
 
 class UTerrainAsset;
@@ -20,11 +21,10 @@ public:
 	UTerrainAsset* GetEditingAsset() const { return EditingObject; }
 	virtual FLinearColor GetWorldCentricTabColorScale() const override { return FLinearColor::White; }
 
-protected:
-	virtual void RegisterTabSpawners(const TSharedRef<FTabManager>& TabManager) override;
-	virtual void UnregisterTabSpawners(const TSharedRef<FTabManager>& TabManager) override;
+	UTerrainGraph* GetGraph() const;
 
 private:
 	UTerrainAsset* EditingObject = nullptr;
+	UTerrainGraph* TerrainGraph = nullptr;
 	TSharedPtr<FTerrainEditorMode> TerrainEditorMode;
 };
