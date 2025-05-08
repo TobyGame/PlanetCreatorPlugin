@@ -1,6 +1,5 @@
 ﻿#include "Graph/TerrainGraphSchema.h"
-#include "Graph/Nodes/TerrainNode.h"
-#include "Graph/Nodes/TerrainNodeFactory.h"
+#include "Graph/Nodes/TerrainNodeCore.h"
 
 
 

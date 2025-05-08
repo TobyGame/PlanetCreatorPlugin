@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "CoreMinimal.h"
 #include "TerrainNodeDefinition.h"
 
 class FTerrainNodeFactory

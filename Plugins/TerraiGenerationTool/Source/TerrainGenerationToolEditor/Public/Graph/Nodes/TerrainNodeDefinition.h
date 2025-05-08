@@ -1,10 +1,11 @@
 ﻿#pragma once
 
-#include "CoreMinimal.h"
-#include "Core/TerrainData.h"
+
 #include "StructUtils/InstancedStruct.h"
 #include "TerrainDataType.h"
 #include "NodeProperties/TerrainPropertyTypes.h"
+
+struct FTerrainData;
 
 struct FTerrainNodePinDefinition
 {

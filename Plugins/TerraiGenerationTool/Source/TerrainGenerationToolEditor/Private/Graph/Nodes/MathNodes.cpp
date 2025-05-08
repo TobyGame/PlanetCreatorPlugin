@@ -1,6 +1,7 @@
 ﻿#include "Graph/Nodes/MathNodes.h"
-#include "Graph/Nodes/TerrainNode.h"
-#include "Graph/Nodes/TerrainNodeMacros.h"
+#include "Core/TerrainData.h"
+#include "Graph/Nodes/TerrainNodeCore.h"
+#include "Graph/Nodes/NodeProperties/TerrainPropertyTypes.h"
 
 
 DECLARE_TERRAIN_NODE(Constant,
