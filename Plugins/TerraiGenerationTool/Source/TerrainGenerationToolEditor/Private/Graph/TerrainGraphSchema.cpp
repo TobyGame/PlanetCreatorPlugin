@@ -1,8 +1,6 @@
 ﻿#include "Graph/TerrainGraphSchema.h"
 #include "Graph/Nodes/TerrainNodeCore.h"
 
-
-
 void UTerrainGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
 	const auto& Nodes = FTerrainNodeFactory::Get().GetAllNodes();
@@ -10,13 +8,7 @@ void UTerrainGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Conte
 	for (const auto& NodePair : Nodes)
 	{
 		const auto& Def = NodePair.Value;
-		TSharedPtr<FEdGraphSchemaAction> Action = MakeShared<FEdGraphSchemaAction_NewNode>(
-			FText::FromString(Def.Category),
-			FText::FromString(Def.DisplayName),
-			FText::GetEmpty(),
-			0
-		);
-
+		TSharedPtr<FTerrainSchemaAction_NewNode> Action = MakeShareable(new FTerrainSchemaAction_NewNode(Def));
 		ContextMenuBuilder.AddAction(Action);
 	}
 }
@@ -34,4 +26,19 @@ const FPinConnectionResponse UTerrainGraphSchema::CanCreateConnection(const UEdG
 void UTerrainGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 {
 	// Optional: Add default nodes to the graph
+}
+
+UEdGraphNode* FTerrainSchemaAction_NewNode::PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
+{
+	if (!ParentGraph)
+		return nullptr;
+
+	UTerrainNode* NewNode = NewObject<UTerrainNode>(ParentGraph);
+	NewNode->SetDefinition(NodeDef);
+	ParentGraph->AddNode(NewNode);
+	NewNode->NodePosX = Location.X;
+	NewNode->NodePosY = Location.Y;
+	NewNode->AllocateDefaultPins();
+
+	return NewNode;
 }
