@@ -20,6 +20,7 @@ FTerrainEditorMode::FTerrainEditorMode(TSharedPtr<FTerrainEditor> InEditor)
 			->Split(
 				FTabManager::NewSplitter()
 				->SetOrientation(Orient_Vertical)
+				->SetSizeCoefficient(0.75f)
 				->Split(
 					FTabManager::NewStack()
 					->AddTab("ViewportTab", ETabState::OpenedTab)
@@ -37,6 +38,7 @@ FTerrainEditorMode::FTerrainEditorMode(TSharedPtr<FTerrainEditor> InEditor)
 			->Split(
 				FTabManager::NewSplitter()
 				->SetOrientation(Orient_Vertical)
+				->SetSizeCoefficient(0.25f)
 				->Split(
 					FTabManager::NewStack()
 					->AddTab("NodePropertiesTab", ETabState::OpenedTab)
