@@ -1,9 +1,10 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "Core/TerrainGraphSaveData.h"
 #include "Engine/DataAsset.h"
 #include "TerrainAsset.generated.h"
+
+class UTerrainGraphSaveData;
 
 /**
  * UTerrainAsset - Custom asset for terrain generation

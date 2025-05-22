@@ -1,6 +1,6 @@
 ﻿#include "TerrainGraphTab.h"
 #include "Toolkit/TerrainEditor.h"
-#include "Graph/TerrainGraphCore.h"
+#include "Graph/TerrainGraph.h"
 
 FTerrainGraphTab::FTerrainGraphTab(TSharedPtr<FTerrainEditor> InEditor)
 	: FTerrainTabFactory(FName("GraphTab"), InEditor), Editor(InEditor)

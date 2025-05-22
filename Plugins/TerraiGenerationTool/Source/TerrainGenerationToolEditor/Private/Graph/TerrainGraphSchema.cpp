@@ -1,5 +1,6 @@
 ﻿#include "Graph/TerrainGraphSchema.h"
-#include "Graph/Nodes/TerrainNodeCore.h"
+#include "Graph/Nodes/TerrainNode.h"
+#include "Graph/Nodes/TerrainNodeFactory.h"
 
 void UTerrainGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {

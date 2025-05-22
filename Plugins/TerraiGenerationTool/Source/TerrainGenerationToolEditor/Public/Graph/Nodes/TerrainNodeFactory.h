@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "TerrainNodeDefinition.h"
+#include "Graph/Nodes/TerrainNodeDefinition.h"
 
 class FTerrainNodeFactory
 {

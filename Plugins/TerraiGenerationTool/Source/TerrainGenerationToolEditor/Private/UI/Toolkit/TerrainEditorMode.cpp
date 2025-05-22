@@ -1,6 +1,10 @@
 ﻿#include "Toolkit/TerrainEditorMode.h"
 #include "Toolkit/TerrainEditor.h"
-#include "TerrainTabIncludes.h"
+#include "UI/Tabs/TerrainGraphTab.h"
+#include "UI/Tabs/TerrainViewportTab.h"
+#include "UI/Tabs/TerrainNodePropertiesTab.h"
+#include "UI/Tabs/TerrainLoggerTab.h"
+#include "UI/Tabs/TerrainGeneralPropertiesTab.h"
 
 #define LOCTEXT_NAMESPACE "TerrainEditorMode"
 
