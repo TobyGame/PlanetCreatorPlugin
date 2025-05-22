@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "Core/TerrainGraphSaveData.h"
 #include "Engine/DataAsset.h"
 #include "TerrainAsset.generated.h"
 
@@ -24,4 +25,7 @@ public:
 	float TerrainScale = 1.0f;
 
 #endif
+
+	UPROPERTY()
+	UTerrainGraphSaveData* SavedGraph = nullptr;
 };

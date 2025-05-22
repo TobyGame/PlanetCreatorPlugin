@@ -17,8 +17,11 @@ TSharedRef<SWidget> FTerrainGraphTab::CreateTabBody(const FWorkflowTabSpawnInfo&
 		return SNew(STextBlock).Text(FText::FromString("Invalid Editor context"));
 	}
 
-	UTerrainGraph* TerrainGraph = NewObject<UTerrainGraph>();
-	TerrainGraph->Schema = UTerrainGraphSchema::StaticClass();
+	UTerrainGraph* TerrainGraph = EditorPtr->GetGraph();
+	if (!TerrainGraph)
+	{
+		return SNew(STextBlock).Text(FText::FromString("No graph loaded"));
+	}
 
 	FGraphAppearanceInfo Appearance;
 	Appearance.CornerText = FText::FromString("Terrain Graph");

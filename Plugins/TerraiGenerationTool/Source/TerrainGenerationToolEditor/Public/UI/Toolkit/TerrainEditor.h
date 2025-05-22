@@ -1,10 +1,10 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "Graph/TerrainGraph.h"
 #include "WorkflowOrientedApp/WorkflowCentricApplication.h"
 
 class UTerrainAsset;
+class UTerrainGraph;
 class FTerrainEditorMode;
 
 /**
@@ -18,13 +18,18 @@ public:
 	virtual FName GetToolkitFName() const override { return FName("TerrainEditor"); }
 	virtual FText GetBaseToolkitName() const override { return FText::FromString("Terrain Editor"); }
 	virtual FString GetWorldCentricTabPrefix() const override { return TEXT("TerrainEditor"); }
-	UTerrainAsset* GetEditingAsset() const { return EditingObject; }
 	virtual FLinearColor GetWorldCentricTabColorScale() const override { return FLinearColor::White; }
 
+	UTerrainAsset* GetEditingAsset() const { return EditingObject; }
 	UTerrainGraph* GetGraph() const;
+
+	virtual void OnClose() override;
+	void OnGraphChanged(const FEdGraphEditAction& Action);
 
 private:
 	UTerrainAsset* EditingObject = nullptr;
 	UTerrainGraph* TerrainGraph = nullptr;
 	TSharedPtr<FTerrainEditorMode> TerrainEditorMode;
+
+	FDelegateHandle GraphChangedListenerHandle;
 };

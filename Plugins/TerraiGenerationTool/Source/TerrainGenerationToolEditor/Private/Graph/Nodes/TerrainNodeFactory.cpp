@@ -20,3 +20,12 @@ void FTerrainNodeFactory::Clear()
 {
 	NodeMap.Empty();
 }
+
+const FTerrainNodeDefinition* FTerrainNodeFactory::Find(const FString& Name) const
+{
+	if (const FTerrainNodeDefinition* Found = NodeMap.Find(Name))
+	{
+		return Found;
+	}
+	return nullptr;
+}

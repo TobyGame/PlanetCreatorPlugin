@@ -35,10 +35,12 @@ UEdGraphNode* FTerrainSchemaAction_NewNode::PerformAction(class UEdGraph* Parent
 
 	UTerrainNode* NewNode = NewObject<UTerrainNode>(ParentGraph);
 	NewNode->SetDefinition(NodeDef);
-	ParentGraph->AddNode(NewNode);
 	NewNode->NodePosX = Location.X;
 	NewNode->NodePosY = Location.Y;
 	NewNode->AllocateDefaultPins();
+
+	ParentGraph->Modify();
+	ParentGraph->AddNode(NewNode, true, true);
 
 	return NewNode;
 }
