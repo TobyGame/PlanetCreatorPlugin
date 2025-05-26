@@ -2,6 +2,7 @@
 #include "AssetToolsModule.h"
 #include "AssetTools/TerrainAssetFactory.h"
 #include "AssetTools/AssetTypeActions_TerrainAsset.h"
+#include "Framework/Commands/GenericCommands.h"
 #include "Graph/Nodes/MathNodes.h"
 #include "Graph/Nodes/TerrainNodeFactory.h"
 
@@ -15,6 +16,7 @@ void FTerrainGenerationToolEditorModule::StartupModule()
 	AssetTools.RegisterAssetTypeActions(TerrainAssetTypeActions.ToSharedRef());
 
 	RegisterAssetTypeActions.Add(TerrainAssetTypeActions);
+	FGenericCommands::Register();
 
 	RegisterMathNodes();
 }

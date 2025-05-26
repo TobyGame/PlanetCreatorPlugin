@@ -22,14 +22,20 @@ public:
 
 	UTerrainAsset* GetEditingAsset() const { return EditingObject; }
 	UTerrainGraph* GetGraph() const;
+	void SetWorkingGraphUI(TSharedPtr<SGraphEditor> InGrapUI) { GraphUI = InGrapUI; }
 
 	virtual void OnClose() override;
 	void OnGraphChanged(const FEdGraphEditAction& Action);
+
+	void DeleteSelectedNodes();
+	bool CanDeleteNodes();
 
 private:
 	UTerrainAsset* EditingObject = nullptr;
 	UTerrainGraph* TerrainGraph = nullptr;
 	TSharedPtr<FTerrainEditorMode> TerrainEditorMode;
+	TSharedPtr<SGraphEditor> GraphUI = nullptr;
+	TSharedPtr<FUICommandList> CommandList;
 
 	FDelegateHandle GraphChangedListenerHandle;
 };

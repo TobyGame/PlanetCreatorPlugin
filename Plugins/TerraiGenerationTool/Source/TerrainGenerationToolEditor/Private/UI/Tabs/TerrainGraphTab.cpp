@@ -26,8 +26,19 @@ TSharedRef<SWidget> FTerrainGraphTab::CreateTabBody(const FWorkflowTabSpawnInfo&
 	FGraphAppearanceInfo Appearance;
 	Appearance.CornerText = FText::FromString("Terrain Graph");
 
-	return SNew(SGraphEditor)
-		.GraphToEdit(TerrainGraph)
-		.Appearance(Appearance)
-		.ShowGraphStateOverlay(false);
+	TSharedPtr<SGraphEditor> GraphEditor =
+		SNew(SGraphEditor)
+		.IsEditable(true)
+		.GraphToEdit(EditorPtr->GetGraph())
+		.AdditionalCommands(EditorPtr->GetToolkitCommands());
+
+	EditorPtr->SetWorkingGraphUI(GraphEditor);
+
+	return SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.FillHeight(1.0f)
+		.HAlign(HAlign_Fill)
+		[
+			GraphEditor.ToSharedRef()
+		];
 }
