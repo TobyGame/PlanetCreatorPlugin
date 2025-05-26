@@ -36,12 +36,15 @@ UEdGraphNode* FTerrainSchemaAction_NewNode::PerformAction(class UEdGraph* Parent
 	if (!ParentGraph)
 		return nullptr;
 
+	FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "AddTerrainNode", "Add Node"));
+
 	UTerrainNode* NewNode = NewObject<UTerrainNode>(ParentGraph);
 	NewNode->SetDefinition(NodeDef);
 	NewNode->NodePosX = Location.X;
 	NewNode->NodePosY = Location.Y;
 	NewNode->AllocateDefaultPins();
 
+	NewNode->Modify();
 	ParentGraph->Modify();
 	ParentGraph->AddNode(NewNode, true, true);
 
