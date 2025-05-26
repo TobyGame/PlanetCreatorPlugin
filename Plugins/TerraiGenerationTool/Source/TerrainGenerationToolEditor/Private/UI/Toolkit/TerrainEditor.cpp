@@ -22,11 +22,23 @@ void FTerrainEditor::InitTerrainEditor(const EToolkitMode::Type Mode, const TSha
 		EditingObject->SavedGraph = NewObject<UTerrainGraphSaveData>(EditingObject, TEXT("SavedGraph"), RF_Transactional);
 	}
 
-	//CommandList = MakeShareable(new FUICommandList);
+	GEditor->RegisterForUndo(this);
+
+	// Commands list for the editor
 	GetToolkitCommands()->MapAction(
 		FGenericCommands::Get().Delete,
 		FExecuteAction::CreateSP(this, &FTerrainEditor::DeleteSelectedNodes),
 		FCanExecuteAction::CreateSP(this, &FTerrainEditor::CanDeleteNodes)
+	);
+
+	GetToolkitCommands()->MapAction(
+		FGenericCommands::Get().Undo,
+		FExecuteAction::CreateSP(this, &FTerrainEditor::Undo)
+	);
+
+	GetToolkitCommands()->MapAction(
+		FGenericCommands::Get().Redo,
+		FExecuteAction::CreateSP(this, &FTerrainEditor::Redo)
 	);
 
 	TerrainGraph = NewObject<UTerrainGraph>(GetTransientPackage(), TEXT("TerrainGraph"), RF_Transactional);
@@ -69,6 +81,8 @@ void FTerrainEditor::OnClose()
 	if (TerrainGraph)
 		TerrainGraph->RemoveOnGraphChangedHandler(GraphChangedListenerHandle);
 
+	GEditor->UnregisterForUndo(this);
+
 	FWorkflowCentricApplication::OnClose();
 }
 
@@ -97,7 +111,7 @@ void FTerrainEditor::DeleteSelectedNodes()
 		if (UTerrainNode* Node = Cast<UTerrainNode>(NodeObj))
 		{
 			Node->Modify();
-			Node->GetGraph()->RemoveNode(Node);
+			Node->DestroyNode();
 		}
 	}
 
@@ -107,8 +121,39 @@ void FTerrainEditor::DeleteSelectedNodes()
 bool FTerrainEditor::CanDeleteNodes()
 {
 	return GraphUI.IsValid()
-		&& GraphUI->GetSelectedNodes().Num() > 0
-		&& FSlateApplication::Get().GetKeyboardFocusedWidget() == GraphUI;
+		&& GraphUI->GetSelectedNodes().Num() > 0;
+
+}
+
+void FTerrainEditor::Undo()
+{
+	GEditor->UndoTransaction();
+	if (GraphUI.IsValid())
+	{
+		GraphUI->NotifyGraphChanged();
+	}
+}
+
+void FTerrainEditor::Redo()
+{
+	GEditor->RedoTransaction();
+	if (GraphUI.IsValid())
+	{
+		GraphUI->NotifyGraphChanged();
+	}
+}
+
+void FTerrainEditor::PostUndo(bool bSuccess)
+{
+	if (GraphUI.IsValid())
+	{
+		GraphUI->NotifyGraphChanged();
+	}
+}
+
+void FTerrainEditor::PostRedo(bool bSuccess)
+{
+	FEditorUndoClient::PostRedo(bSuccess);
 }
 
 #undef LOCTEXT_NAMESPACE

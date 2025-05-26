@@ -27,8 +27,15 @@ public:
 	virtual void OnClose() override;
 	void OnGraphChanged(const FEdGraphEditAction& Action);
 
+	// Deletion logic
 	void DeleteSelectedNodes();
 	bool CanDeleteNodes();
+
+	// Undo/Redo system
+	virtual void Undo();
+	virtual void Redo();
+	virtual void PostUndo(bool bSuccess) override;
+	virtual void PostRedo(bool bSuccess) override;
 
 private:
 	UTerrainAsset* EditingObject = nullptr;
