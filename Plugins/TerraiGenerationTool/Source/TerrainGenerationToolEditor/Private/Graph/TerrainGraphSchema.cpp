@@ -1,4 +1,6 @@
 ﻿#include "Graph/TerrainGraphSchema.h"
+
+#include "Framework/Commands/GenericCommands.h"
 #include "Graph/Nodes/TerrainNode.h"
 #include "Graph/Nodes/TerrainNodeFactory.h"
 
@@ -44,4 +46,16 @@ UEdGraphNode* FTerrainSchemaAction_NewNode::PerformAction(class UEdGraph* Parent
 	ParentGraph->AddNode(NewNode, true, true);
 
 	return NewNode;
+}
+
+void UTerrainGraphSchema::GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const
+{
+	Super::GetContextMenuActions(Menu, Context);
+
+	if (!Context->bIsDebugging)
+	{
+		FToolMenuSection& Section = Menu->FindOrAddSection("TerrainGraph");
+
+		Section.AddMenuEntry(FGenericCommands::Get().Delete);
+	}
 }
