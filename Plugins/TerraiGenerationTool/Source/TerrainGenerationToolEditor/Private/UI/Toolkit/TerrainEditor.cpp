@@ -106,7 +106,9 @@ void FTerrainEditor::DeleteSelectedNodes()
 
 bool FTerrainEditor::CanDeleteNodes()
 {
-	return GraphUI.IsValid() && GraphUI->GetSelectedNodes().Num() > 0;
+	return GraphUI.IsValid()
+		&& GraphUI->GetSelectedNodes().Num() > 0
+		&& FSlateApplication::Get().GetKeyboardFocusedWidget() == GraphUI;
 }
 
 #undef LOCTEXT_NAMESPACE
