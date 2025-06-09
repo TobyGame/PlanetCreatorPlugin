@@ -4,7 +4,6 @@
 #include "Graph/TerrainGraph.h"
 #include "Graph/Nodes/TerrainNode.h"
 #include "Graph/Nodes/TerrainNodeFactory.h"
-#include "Core/TerrainData.h"
 
 void FTerrainGraphBuilder::LoadFromAsset(UTerrainAsset* Asset, UTerrainGraph* Graph)
 {

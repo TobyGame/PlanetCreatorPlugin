@@ -1,5 +1,5 @@
 ﻿#include "Graph/Nodes/MathNodes.h"
-#include "Core/TerrainData.h"
+#include "Core/TerrainDataSystem.h"
 #include "Graph/Nodes/TerrainNode.h"
 #include "Graph/Nodes/TerrainNodeDefinition.h"
 #include "Graph/Nodes/TerrainNodeFactory.h"
@@ -11,29 +11,24 @@ DECLARE_TERRAIN_NODE(Constant,
 	"Constant",
 	"Math",
 	{
-	DEFINE_PIN("Result", Heightmap, false, true)
+	DEFINE_PIN("Result",false, true)
 	},
 	{
 	DEFINE_PROPERTY("Value", FTerrainFloatProperty{1.0f}, "Settings")
 	},
-	([](const TArray<TSharedPtr<FTerrainData>>& Inputs, UTerrainNode* Node) -> TSharedPtr<FTerrainData>
+	([](FTerrainDataSet& DataSet, UTerrainNode* Node, int32 ResolutionX, int32 ResolutionY)
 		{
 		const float Fill = Node->GetProperty<FTerrainFloatProperty>("Value").Value;
 
-		TSharedPtr<FTerrainData> Out = MakeShared<FTerrainData>();
-		Out->Heightmap = MakeShared<FTerrainHeightmap>();
-		Out->Heightmap->Resize(512, 512);
+		TSharedPtr<FTerrain2D> Height = DataSet.GetOrCreate("Height", ResolutionX, ResolutionY);
 
-		for (int32 Y = 0; Y < Out->Heightmap->Height; ++Y)
+		for (int32 Y = 0; Y < ResolutionY; ++Y)
 		{
-		for (int32 X = 0; X < Out->Heightmap->Width; ++X)
+		for (int32 X = 0; X < ResolutionX; ++X)
 		{
-		Out->Heightmap->Set(X, Y, Fill);
+		Height->Set(X, Y, Fill);
 		}
 		}
-
-		Out->SourceNodeName = Node->GetFName();
-		return Out;
 		})
 );
 

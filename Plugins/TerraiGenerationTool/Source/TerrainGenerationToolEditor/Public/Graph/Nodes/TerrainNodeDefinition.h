@@ -2,15 +2,13 @@
 
 
 #include "StructUtils/InstancedStruct.h"
-#include "TerrainDataType.h"
-#include "NodeProperties/TerrainPropertyTypes.h"
+#include "Core/TerrainDataSystem.h"
 
 struct FTerrainData;
 
 struct FTerrainNodePinDefinition
 {
 	FName Name;
-	ETerrainDataType Type;
 	bool bInput;
 	bool bRequired;
 };
@@ -29,5 +27,5 @@ struct FTerrainNodeDefinition
 	FString Category;
 	TArray<FTerrainNodePinDefinition> Pins;
 	TArray<FTerrainNodePropertyDefinition> Properties;
-	TFunction<TSharedPtr<FTerrainData>(const TArray<TSharedPtr<FTerrainData>>&, class UTerrainNode*)> ProcessFunction;
+	TFunction<void(FTerrainDataSet& DataSet, class UTerrainNode* Node, int32 ResolutionX, int32 ResolutionY)> ProcessFunction;
 };

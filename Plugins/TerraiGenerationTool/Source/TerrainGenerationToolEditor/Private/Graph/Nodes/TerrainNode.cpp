@@ -7,7 +7,7 @@ void UTerrainNode::AllocateDefaultPins()
 	for (const auto& PinDef : NodeDefinition.Pins)
 	{
 		const EEdGraphPinDirection Direction = PinDef.bInput ? EGPD_Input : EGPD_Output;
-		CreatePin(Direction, FName(*UEnum::GetValueAsString(PinDef.Type)), PinDef.Name);
+		CreatePin(Direction, NAME_None, PinDef.Name);
 	}
 }
 
