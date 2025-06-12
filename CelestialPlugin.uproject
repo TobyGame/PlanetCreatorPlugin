@@ -19,7 +19,7 @@
 			]
 		},
 		{
-			"Name": "TerrainGenerationTool",
+          "Name": "UTK",
 			"Enabled": true
 		}
 	]
