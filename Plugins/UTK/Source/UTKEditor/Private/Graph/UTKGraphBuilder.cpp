@@ -1,6 +1,7 @@
 ﻿#include "Graph/UTKGraphBuilder.h"
 
 #include "Assets/UTKAsset.h"
+#include "Core/UTKLoggerEditor.h"
 #include "Graph/UTKGraph.h"
 #include "Graph/Nodes/UTKNode.h"
 #include "Graph/Nodes/UTKNodeFactory.h"
@@ -10,6 +11,12 @@ void FUTKGraphBuilder::LoadFromAsset(UUTKAsset* Asset, UUTKGraph* Graph)
 	if (!Asset || !Graph) return;
 
 	Graph->Nodes.Empty();
+
+	UE_LOG(LogUTKEditor,
+		Log,
+		TEXT("Loading %d nodes from asset '%s'."),
+		Asset->SavedGraph->Nodes.Num(),
+		*Asset->GetName());
 
 	for (const UUTKGraphNodeSaveData* NodeData : Asset->SavedGraph->Nodes)
 	{
@@ -33,6 +40,12 @@ void FUTKGraphBuilder::SaveToAsset(UUTKGraph* Graph, UUTKAsset* Asset)
 {
 	if (!Graph || !Asset)
 		return;
+
+	UE_LOG(LogUTKEditor,
+		Log,
+		TEXT("Saving %d nodes from graph to asset '%s'."),
+		Graph->Nodes.Num(),
+		*Asset->GetName());
 
 	UUTKGraphSaveData* SaveData = Asset->SavedGraph;
 	SaveData->Modify();

@@ -1,5 +1,7 @@
 ﻿#include "Graph/UTKGraphSchema.h"
 
+#include "Core/UTKLogger.h"
+#include "Core/UTKLoggerEditor.h"
 #include "Framework/Commands/GenericCommands.h"
 #include "Graph/Nodes/UTKNode.h"
 #include "Graph/Nodes/UTKNodeFactory.h"
@@ -54,6 +56,8 @@ UEdGraphNode* FUTKSchemaAction_NewNode::PerformAction(class UEdGraph* ParentGrap
 void UUTKGraphSchema::GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const
 {
 	Super::GetContextMenuActions(Menu, Context);
+
+	UE_LOG(LogUTKEditor, Verbose, TEXT("Building context menu for graph schema."));
 
 	if (!Context->bIsDebugging)
 	{

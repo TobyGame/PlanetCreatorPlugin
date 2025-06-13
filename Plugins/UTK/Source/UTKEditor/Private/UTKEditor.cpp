@@ -2,6 +2,7 @@
 #include "AssetToolsModule.h"
 #include "AssetTools/UTKAssetFactory.h"
 #include "AssetTools/AssetTypeActions_UTKAsset.h"
+#include "Core/UTKLoggerEditor.h"
 #include "Framework/Commands/GenericCommands.h"
 #include "Graph/Nodes/UTK_MathNodes.h"
 #include "Graph/Nodes/UTKNodeFactory.h"
@@ -14,8 +15,9 @@ void FUTKEditor::StartupModule()
 
 	TSharedRef<FAssetTypeActions_UTKAsset> UTKAssetTypeActions = MakeShared<FAssetTypeActions_UTKAsset>();
 	AssetTools.RegisterAssetTypeActions(UTKAssetTypeActions);
-
 	RegisterAssetTypeActions.Add(UTKAssetTypeActions);
+	UE_LOG(LogUTKEditor, Log, TEXT("Register UTK asset type actions."));
+
 	FGenericCommands::Register();
 
 	RegisterMathNodes();
@@ -30,6 +32,7 @@ void FUTKEditor::ShutdownModule()
 		for (auto& Action : RegisterAssetTypeActions)
 		{
 			AssetTools.UnregisterAssetTypeActions(Action);
+			UE_LOG(LogUTKEditor, Log, TEXT("Unregister UTK asset type actions."));
 		}
 	}
 
