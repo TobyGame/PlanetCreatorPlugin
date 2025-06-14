@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "EdGraph/EdGraphNode.h"
 #include "UTKNodeDefinition.h"
+#include "Core/UTKNodeDiagnostics.h"
 #include "UTKNode.generated.h"
 
 UCLASS()
@@ -38,8 +39,12 @@ public:
 		return Default;
 	}
 
+	const FUTKNodeDiagnostics& GetDiagnostics() const { return Diagnostics; }
+	FUTKNodeDiagnostics& AccessDiagnostics() { return Diagnostics; }
+
 private:
 	FUTKNodeDefinition NodeDefinition;
+	FUTKNodeDiagnostics Diagnostics;
 
 	TMap<FName, FInstancedStruct> RuntimeProperties;
 };

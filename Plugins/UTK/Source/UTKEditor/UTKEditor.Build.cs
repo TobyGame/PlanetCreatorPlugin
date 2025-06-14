@@ -19,6 +19,7 @@ public class UTKEditor : ModuleRules
             new string[]
             {
                 "Core",
+                "UTK",
             }
         );
 
@@ -34,7 +35,6 @@ public class UTKEditor : ModuleRules
                 "GraphEditor",
                 "EditorStyle",
                 "PropertyEditor",
-                "UTK",
                 "StructUtils",
                 "ToolMenus",
             }
