@@ -1,6 +1,7 @@
 # 🌌 Unreal Planet Creator Plugin
 
-A modular plugin suite for Unreal Engine 5.5+ designed to enable the creation of full-scale procedural planets, moons, ecosystems, weather systems, and planetary terrains for space exploration and world simulation games.
+A modular plugin suite for Unreal Engine 5.5+ designed to enable the creation of full-scale procedural planets, moons,
+ecosystems, weather systems, and planetary terrains for space exploration and world simulation games.
 
 ## 🔧 Plugin Structure
 
@@ -8,7 +9,8 @@ This repository contains multiple specialized tools, each implemented as an Unre
 
 ### 🔹 1. Planet Creator Plugin
 
-The central framework managing planetary systems and their components. It provides integration and orchestration for the following tools:
+The central framework managing planetary systems and their components. It provides integration and orchestration for the
+following tools:
 
 - **Celestial Body Tool**: Procedural planets and moons using Nanite and PCG.
 - **Atmosphere & Weather Tool**: Realistic atmospheric scattering and dynamic weather.
@@ -26,7 +28,8 @@ The central framework managing planetary systems and their components. It provid
 
 > **Standalone plugin for procedural terrain creation**
 
-A powerful node-based terrain generation tool, designed to replace third-party solutions like Gaea or World Machine and fully operate within Unreal Engine.
+A powerful node-based terrain generation tool, designed to replace third-party solutions like Gaea or World Machine and
+fully operate within Unreal Engine.
 
 #### Key Features
 
