@@ -12,6 +12,8 @@ void FUTKGraphBuilder::LoadFromAsset(UUTKAsset* Asset, UUTKGraph* Graph)
 
 	Graph->Nodes.Empty();
 
+	TMap<FGuid, UUTKNode*> NodeMap;
+
 	UE_LOG(LogUTKEditor,
 		Log,
 		TEXT("Loading %d nodes from asset '%s'."),
@@ -31,9 +33,44 @@ void FUTKGraphBuilder::LoadFromAsset(UUTKAsset* Asset, UUTKGraph* Graph)
 		Node->AllocateDefaultPins();
 
 		Graph->AddNode(Node);
+		Node->NodeGuid = NodeData->Guid;
+		NodeMap.Add(Node->NodeGuid, Node);
 	}
 
-	// TODO: Wire up pin connections
+	for (const UUTKGraphNodeSaveData* NodeData : Asset->SavedGraph->Nodes)
+	{
+		UUTKNode* FromNode = NodeMap.FindRef(NodeData->Guid);
+		if (!FromNode) continue;
+
+		for (const UUTKGraphPinSaveData* PinData : NodeData->Pins)
+		{
+			if (!PinData || PinData->bInput) continue;
+
+			for (UEdGraphPin* FromPin : FromNode->Pins)
+			{
+				if (FromPin->PinName != PinData->Name || FromPin->Direction != EGPD_Output)
+					continue;
+
+				for (int32 i = 0; i < PinData->ConnectedToNodes.Num(); ++i)
+				{
+					const FGuid& ToNodeGuid = PinData->ConnectedToNodes[i];
+					const FName& ToPinName = PinData->ConnectedPins.IsValidIndex(i) ? PinData->ConnectedPins[i] : NAME_None;
+
+					UUTKNode* ToNode = NodeMap.FindRef(ToNodeGuid);
+					if (!ToNode) continue;
+
+					for (UEdGraphPin* ToPin : ToNode->Pins)
+					{
+						if (ToPin->PinName == ToPinName && ToPin->Direction == EGPD_Input)
+						{
+							FromPin->MakeLinkTo(ToPin);
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 void FUTKGraphBuilder::SaveToAsset(UUTKGraph* Graph, UUTKAsset* Asset)
@@ -56,9 +93,33 @@ void FUTKGraphBuilder::SaveToAsset(UUTKGraph* Graph, UUTKAsset* Asset)
 		if (UUTKNode* Node = Cast<UUTKNode>(GraphNode))
 		{
 			UUTKGraphNodeSaveData* NodeData = NewObject<UUTKGraphNodeSaveData>(SaveData);
-			NodeData->Id = Node->GetFName();
+			NodeData->Guid = Node->NodeGuid;
 			NodeData->NodeType = Node->GetDefinition().Name;
 			NodeData->Position = FVector2D(Node->NodePosX, Node->NodePosY);
+
+			for (UEdGraphPin* Pin : Node->Pins)
+			{
+
+				UUTKGraphPinSaveData* PinData = NewObject<UUTKGraphPinSaveData>(NodeData);
+				PinData->Name = Pin->PinName;
+				PinData->bInput = Pin->Direction == EGPD_Input;
+
+				if (Pin->Direction == EGPD_Output)
+				{
+					for (UEdGraphPin* Linked : Pin->LinkedTo)
+					{
+						if (UUTKNode* LinkedNode = Cast<UUTKNode>(Linked->GetOwningNode()))
+						{
+							PinData->ConnectedToNodes.Add(LinkedNode->NodeGuid);
+							PinData->ConnectedPins.Add(Linked->PinName);
+						}
+					}
+				}
+
+
+				NodeData->Pins.Add(PinData);
+			}
+
 			SaveData->Nodes.Add(NodeData);
 		}
 	}

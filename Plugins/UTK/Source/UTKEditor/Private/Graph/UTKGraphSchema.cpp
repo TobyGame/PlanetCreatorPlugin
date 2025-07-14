@@ -20,7 +20,7 @@ void UUTKGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMe
 
 const FPinConnectionResponse UUTKGraphSchema::CanCreateConnection(const UEdGraphPin* A, const UEdGraphPin* B) const
 {
-	if (A->Direction == B->Direction || A->PinType != B->PinType)
+	if (A->Direction == B->Direction)
 	{
 		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Pins must be compatible and opposite."));
 	}
@@ -40,7 +40,7 @@ UEdGraphNode* FUTKSchemaAction_NewNode::PerformAction(class UEdGraph* ParentGrap
 
 	FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "AddUTKNode", "Add Node"));
 
-	UUTKNode* NewNode = NewObject<UUTKNode>(ParentGraph);
+	UUTKNode* NewNode = NewObject<UUTKNode>(ParentGraph, UUTKNode::StaticClass(), NAME_None, RF_Transactional);
 	NewNode->SetDefinition(NodeDef);
 	NewNode->NodePosX = Location.X;
 	NewNode->NodePosY = Location.Y;
@@ -65,4 +65,35 @@ void UUTKGraphSchema::GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMe
 
 		Section.AddMenuEntry(FGenericCommands::Get().Delete);
 	}
+}
+bool UUTKGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const
+{
+	if (A->Direction == EGPD_Input && B->Direction == EGPD_Output)
+	{
+		Swap(A, B);
+	}
+
+	if (A->Direction != EGPD_Output || B->Direction != EGPD_Input)
+	{
+		return false;
+	}
+
+	for (int32 i = B->LinkedTo.Num() - 1; i >= 0; --i)
+	{
+		UEdGraphPin* OldOutput = B->LinkedTo[i];
+		if (OldOutput && !OldOutput->IsPendingKill())
+		{
+			OldOutput->BreakLinkTo(B);
+		}
+	}
+
+	A->MakeLinkTo(B);
+
+	if (UEdGraph* Graph = A->GetOwningNode()->GetGraph())
+	{
+		Graph->Modify();
+		Graph->NotifyGraphChanged();
+	}
+
+	return true;
 }

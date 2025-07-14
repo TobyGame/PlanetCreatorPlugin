@@ -18,10 +18,10 @@ public:
 	bool bInput = true;
 
 	UPROPERTY()
-	FName ConnectedToNode;
+	TArray<FGuid> ConnectedToNodes;
 
 	UPROPERTY()
-	FName ConnectedPin;
+	TArray<FName> ConnectedPins;
 };
 
 UCLASS()
@@ -31,7 +31,7 @@ class UTK_API UUTKGraphNodeSaveData : public UObject
 
 public:
 	UPROPERTY()
-	FName Id;
+	FGuid Guid;
 
 	UPROPERTY()
 	FString NodeType;

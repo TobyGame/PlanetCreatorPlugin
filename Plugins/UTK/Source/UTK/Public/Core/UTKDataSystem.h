@@ -25,7 +25,7 @@ struct FTerrain2D
 		Values.SetNumZeroed(Width * Height);
 	}
 
-	FORCEINLINE float GEt(int32 X, int32 Y)
+	FORCEINLINE float Get(int32 X, int32 Y)
 	{
 		check(X >= 0 && X < Width && Y >= 0 && Y < Height);
 		return Values[Y * Width + X];

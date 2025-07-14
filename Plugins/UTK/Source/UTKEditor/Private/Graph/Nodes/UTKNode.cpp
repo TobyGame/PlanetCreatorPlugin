@@ -1,6 +1,9 @@
 ﻿#include "Graph/Nodes/UTKNode.h"
 
-UUTKNode::UUTKNode() {}
+UUTKNode::UUTKNode()
+{
+	NodeGuid = FGuid::NewGuid();
+}
 
 void UUTKNode::AllocateDefaultPins()
 {
