@@ -9,7 +9,7 @@
  */
 
 UCLASS()
-class UTKEDITOR_API UUTKAssetFactory : public UFactory
+class UTK_API UUTKAssetFactory : public UFactory
 {
 	GENERATED_BODY()
 

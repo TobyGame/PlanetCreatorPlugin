@@ -1,4 +1,4 @@
-﻿#include "UTKLoggerTab.h"
+﻿#include "UI/Tabs/UTKLoggerTab.h"
 
 FUTKLoggerTab::FUTKLoggerTab(TSharedPtr<FUTKEditorApp> InEditor)
 	: FUTKTabFactory(FName("LoggerTab"), InEditor), Editor(InEditor)

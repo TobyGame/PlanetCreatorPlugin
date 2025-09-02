@@ -1,8 +1,8 @@
-﻿#include "UTKGeneralPropertiesTab.h"
+﻿#include "UI/Tabs/UTKGeneralPropertiesTab.h"
 #include "PropertyEditorModule.h"
 #include "IDetailsView.h"
 #include "Modules/ModuleManager.h"
-#include "Toolkit/UTKEditorApp.h"
+#include "UI/Toolkit/UTKEditorApp.h"
 #include "Assets/UTKAsset.h"
 
 FUTKGeneralPropertiesTab::FUTKGeneralPropertiesTab(TSharedPtr<FUTKEditorApp> InEditor)

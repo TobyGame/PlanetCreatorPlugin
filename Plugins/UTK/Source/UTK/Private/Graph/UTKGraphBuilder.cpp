@@ -1,7 +1,7 @@
 ﻿#include "Graph/UTKGraphBuilder.h"
 
 #include "Assets/UTKAsset.h"
-#include "Core/UTKLoggerEditor.h"
+#include "Core/UTKLogger.h"
 #include "Graph/UTKGraph.h"
 #include "Graph/Nodes/UTKNode.h"
 #include "Graph/Nodes/UTKNodeFactory.h"

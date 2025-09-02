@@ -1,11 +1,11 @@
 ﻿#pragma once
 
-#include "Tabs/UTKTabFactory.h"
+#include "UI/Tabs/UTKTabFactory.h"
 
-class FUTKLoggerTab : public FUTKTabFactory
+class FUTKGraphTab : public FUTKTabFactory
 {
 public:
-	FUTKLoggerTab(TSharedPtr<FUTKEditorApp> InEditor);
+	FUTKGraphTab(TSharedPtr<FUTKEditorApp> InEditor);
 	virtual TSharedRef<SWidget> CreateTabBody(const FWorkflowTabSpawnInfo& Info) const override;
 
 private:

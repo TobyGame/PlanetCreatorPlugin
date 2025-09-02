@@ -1,5 +1,5 @@
-﻿#include "UTKGraphTab.h"
-#include "Toolkit/UTKEditorApp.h"
+﻿#include "UI/Tabs/UTKGraphTab.h"
+#include "UI/Toolkit/UTKEditorApp.h"
 #include "Graph/UTKGraph.h"
 
 FUTKGraphTab::FUTKGraphTab(TSharedPtr<FUTKEditorApp> InEditor)

@@ -1,5 +1,5 @@
-﻿#include "Toolkit/UTKEditorMode.h"
-#include "Toolkit/UTKEditorApp.h"
+﻿#include "UI/Toolkit/UTKEditorMode.h"
+#include "UI/Toolkit/UTKEditorApp.h"
 #include "UI/Tabs/UTKGraphTab.h"
 #include "UI/Tabs/UTKViewportTab.h"
 #include "UI/Tabs/UTKNodePropertiesTab.h"

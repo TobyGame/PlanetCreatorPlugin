@@ -1,5 +1,5 @@
-﻿#include "Toolkit/UTKEditorApp.h"
-#include "Toolkit/UTKEditorMode.h"
+﻿#include "UI/Toolkit/UTKEditorApp.h"
+#include "UI/Toolkit/UTKEditorMode.h"
 #include "Modules/ModuleManager.h"
 #include "Assets/UTKAsset.h"
 #include "Framework/Commands/GenericCommands.h"

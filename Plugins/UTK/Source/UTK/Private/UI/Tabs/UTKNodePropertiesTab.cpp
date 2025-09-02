@@ -1,4 +1,4 @@
-﻿#include "UTKNodePropertiesTab.h"
+﻿#include "UI/Tabs/UTKNodePropertiesTab.h"
 
 FUTKNodePropertiesTab::FUTKNodePropertiesTab(TSharedPtr<FUTKEditorApp> InEditor)
 	: FUTKTabFactory(FName("NodePropertiesTab"), InEditor), Editor(InEditor)

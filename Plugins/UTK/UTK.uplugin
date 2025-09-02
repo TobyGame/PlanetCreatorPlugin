@@ -16,11 +16,6 @@
   "Modules": [
     {
       "Name": "UTK",
-      "Type": "Runtime",
-      "LoadingPhase": "Default"
-    },
-    {
-      "Name": "UTKEditor",
       "Type": "Editor",
       "LoadingPhase": "Default"
     }

@@ -11,7 +11,9 @@ public class UTK : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
+				"Core", "CoreUObject", "Engine",
+				"Slate", "SlateCore",
+				"InputCore", "ApplicationCore"
 			}
 			);
 			
@@ -19,9 +21,15 @@ public class UTK : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"CoreUObject",
-				"Engine",
+				"UnrealEd",
+				"EditorFramework",
+				"Kismet",
+				"GraphEditor",
+				"PropertyEditor",
+				"ToolMenus",
+				"AssetTools",
 				"Projects",
+				"RenderCore"
 			}
 			);
 	}

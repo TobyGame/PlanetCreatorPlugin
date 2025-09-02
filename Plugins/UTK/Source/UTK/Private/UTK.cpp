@@ -1,20 +1,49 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "UTK.h"
+#include "Modules/ModuleManager.h"
+#include "AssetToolsModule.h"
+#include "IAssetTools.h"
+#include "AssetTools/AssetTypeActions_UTKAsset.h"
+#include "Framework/Commands/GenericCommands.h"
+#include "Graph/Nodes/UTK_MathNodes.h"
+#include "Graph/Nodes/UTKNodeFactory.h"
 
-#define LOCTEXT_NAMESPACE "FUTK"
+#define LOCTEXT_NAMESPACE "FUTKModule"
 
-void FUTK::StartupModule()
+void FUTKModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+	if (FModuleManager::Get().IsModuleLoaded("AssetTools"))
+	{
+		IAssetTools& AssetTools = FAssetToolsModule::GetModule().Get();
+		TSharedRef<IAssetTypeActions> Actions = MakeShareable(new FAssetTypeActions_UTKAsset());
+		AssetTools.RegisterAssetTypeActions(Actions);
+		RegisteredAssetTypeActions.Add(Actions);
+	}
+
+	FGenericCommands::Register();
+
+	RegisterMathNodes();
 }
 
-void FUTK::ShutdownModule()
+void FUTKModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
+	if (FModuleManager::Get().IsModuleLoaded("AssetTools"))
+	{
+		IAssetTools& AssetTools = FAssetToolsModule::GetModule().Get();
+		for (const TSharedPtr<IAssetTypeActions>& Actions : RegisteredAssetTypeActions)
+		{
+			if (Actions.IsValid())
+			{
+				AssetTools.UnregisterAssetTypeActions(Actions.ToSharedRef());
+			}
+		}
+	}
+
+	FUTKNodeFactory::Get().Clear();
+	RegisteredAssetTypeActions.Empty();
 }
 
 #undef LOCTEXT_NAMESPACE
 
-IMPLEMENT_MODULE(FUTK, UTK)
+IMPLEMENT_MODULE(FUTKModule, UTK)
