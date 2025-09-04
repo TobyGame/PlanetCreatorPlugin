@@ -1,5 +1,7 @@
 ﻿#include "Graph/Nodes/UTKNode.h"
 
+#include "Graph/Nodes/UTKNodeFactory.h"
+
 UUTKNode::UUTKNode()
 {
 	NodeGuid = FGuid::NewGuid();
@@ -25,11 +27,32 @@ void UUTKNode::SetDefinition(const FUTKNodeDefinition& InDefinition)
 
 	for (const auto& Property : NodeDefinition.Properties)
 	{
-		RuntimeProperties.Add(Property.Name, Property.Value());
+		if (!RuntimeProperties.Contains(Property.Name))
+		{
+			RuntimeProperties.Add(Property.Name, Property.Value());
+		}
 	}
 }
 
 const FUTKNodeDefinition& UUTKNode::GetDefinition() const
 {
 	return NodeDefinition;
+}
+
+void UUTKNode::PostLoad()
+{
+	Super::PostLoad();
+
+	if (const FUTKNodeDefinition* Def = FUTKNodeFactory::Get().Find(NodeType.ToString()))
+	{
+		NodeDefinition = *Def;
+
+		for (const auto& Property : NodeDefinition.Properties)
+		{
+			if (!RuntimeProperties.Contains(Property.Name))
+			{
+				RuntimeProperties.Add(Property.Name, Property.Value());
+			}
+		}
+	}
 }

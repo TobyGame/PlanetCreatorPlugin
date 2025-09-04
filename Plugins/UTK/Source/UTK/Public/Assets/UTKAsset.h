@@ -5,6 +5,7 @@
 #include "UTKAsset.generated.h"
 
 class UUTKGraphSaveData;
+class UUTKGraph;
 
 /**
  * UUTKAsset - Custom asset for terrain generation
@@ -19,13 +20,12 @@ public:
 	/** Default constructor*/
 	UUTKAsset();
 
-#if WITH_EDITORONLY_DATA
-
 	/** Example property for terrain setting */
 	UPROPERTY(EditAnywhere, Category = "Terrain Settings")
 	float TerrainScale = 1.0f;
 
-#endif
+	UPROPERTY(Instanced)
+	TObjectPtr<UUTKGraph> Graph = nullptr;
 
 	UPROPERTY()
 	UUTKGraphSaveData* SavedGraph = nullptr;

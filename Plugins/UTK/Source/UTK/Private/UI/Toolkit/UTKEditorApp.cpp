@@ -17,11 +17,6 @@ void FUTKEditorApp::InitUTKEditor(const EToolkitMode::Type Mode, const TSharedPt
 	if (!EditingObject)
 		return;
 
-	if (!EditingObject->SavedGraph)
-	{
-		EditingObject->SavedGraph = NewObject<UUTKGraphSaveData>(EditingObject, TEXT("SavedGraph"), RF_Transactional);
-	}
-
 	GEditor->RegisterForUndo(this);
 
 	// Commands list for the editor
@@ -41,8 +36,24 @@ void FUTKEditorApp::InitUTKEditor(const EToolkitMode::Type Mode, const TSharedPt
 		FExecuteAction::CreateSP(this, &FUTKEditorApp::Redo)
 	);
 
-	UTKGraph = NewObject<UUTKGraph>(GetTransientPackage(), TEXT("UTKGraph"), RF_Transactional);
-	UTKGraph->Schema = UUTKGraphSchema::StaticClass();
+	if (!EditingObject->Graph)
+	{
+		EditingObject->Modify();
+		UUTKGraph* NewGraph = NewObject<UUTKGraph>(EditingObject, TEXT("Graph"), RF_Transactional);
+		//NewGraph->Schema = UUTKGraphSchema::StaticClass();
+		EditingObject->Graph = NewGraph;
+		EditingObject->MarkPackageDirty();
+	}
+
+	if (EditingObject->SavedGraph)
+	{
+		FUTKGraphBuilder::LoadFromAsset(EditingObject, CastChecked<UUTKGraph>(EditingObject->Graph));
+		EditingObject->Modify();
+		EditingObject->SavedGraph = nullptr;
+		EditingObject->MarkPackageDirty();
+	}
+
+	UTKGraph = EditingObject->Graph;
 
 	InitAssetEditor(
 		Mode,
@@ -56,8 +67,6 @@ void FUTKEditorApp::InitUTKEditor(const EToolkitMode::Type Mode, const TSharedPt
 
 	AddApplicationMode(TEXT("UTKEditorMode"), MakeShareable(new FUTKEditorMode(SharedThis(this))));
 	SetCurrentMode(TEXT("UTKEditorMode"));
-
-	FUTKGraphBuilder::LoadFromAsset(EditingObject, UTKGraph);
 
 	GraphChangedListenerHandle = UTKGraph->AddOnGraphChangedHandler(
 		FOnGraphChanged::FDelegate::CreateSP(this, &FUTKEditorApp::OnGraphChanged)
@@ -76,8 +85,6 @@ UUTKGraph* FUTKEditorApp::GetGraph() const
 
 void FUTKEditorApp::OnClose()
 {
-	FUTKGraphBuilder::SaveToAsset(UTKGraph, EditingObject);
-
 	if (UTKGraph)
 		UTKGraph->RemoveOnGraphChangedHandler(GraphChangedListenerHandle);
 
@@ -91,7 +98,8 @@ void FUTKEditorApp::OnGraphChanged(const FEdGraphEditAction& Action)
 	if (!UTKGraph || !EditingObject)
 		return;
 
-	FUTKGraphBuilder::SaveToAsset(UTKGraph, EditingObject);
+	EditingObject->Modify();
+	EditingObject->MarkPackageDirty();
 }
 
 void FUTKEditorApp::DeleteSelectedNodes()

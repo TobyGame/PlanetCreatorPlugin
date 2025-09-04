@@ -1,6 +1,8 @@
 ﻿#include "AssetTools/UTKAssetFactory.h"
 #include "Assets/UTKAsset.h"
 #include "AssetToolsModule.h"
+#include "Graph/UTKGraph.h"
+#include "Graph/UTKGraphSchema.h"
 
 UUTKAssetFactory::UUTKAssetFactory()
 {
@@ -16,7 +18,16 @@ UObject* UUTKAssetFactory::FactoryCreateNew(UClass* Class, UObject* InParent, FN
 		return nullptr;
 	}
 
-	return NewObject<UUTKAsset>(InParent, Class, Name, Flags);
+	UUTKAsset* Asset = NewObject<UUTKAsset>(InParent, Class, Name, Flags);
+
+	if (!Asset->Graph)
+	{
+		UUTKGraph* Graph = NewObject<UUTKGraph>(Asset, TEXT("Graph"), RF_Transactional);
+		Graph->Schema = UUTKGraphSchema::StaticClass();
+		Asset->Graph = Graph;
+	}
+
+	return Asset;
 }
 
 uint32 UUTKAssetFactory::GetMenuCategories() const

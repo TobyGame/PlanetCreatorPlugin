@@ -40,6 +40,8 @@ UEdGraphNode* FUTKSchemaAction_NewNode::PerformAction(class UEdGraph* ParentGrap
 	FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "AddUTKNode", "Add Node"));
 
 	UUTKNode* NewNode = NewObject<UUTKNode>(ParentGraph, UUTKNode::StaticClass(), NAME_None, RF_Transactional);
+
+	NewNode->NodeType = FName(*NodeDef.Name);
 	NewNode->SetDefinition(NodeDef);
 	NewNode->NodePosX = Location.X;
 	NewNode->NodePosY = Location.Y;

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "EdGraph/EdGraphNode.h"
+#include "StructUtils/InstancedStruct.h"
 #include "UTKNodeDefinition.h"
 #include "Core/UTKNodeDiagnostics.h"
 #include "UTKNode.generated.h"
@@ -14,11 +15,19 @@ class UUTKNode : public UEdGraphNode
 public:
 	UUTKNode();
 
+	UPROPERTY()
+	FName NodeType;
+
+	UPROPERTY()
+	TMap<FName, FInstancedStruct> RuntimeProperty;
+
 	virtual void AllocateDefaultPins() override;
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 
 	void SetDefinition(const FUTKNodeDefinition& InDefinition);
 	const FUTKNodeDefinition& GetDefinition() const;
+
+	virtual void PostLoad() override;
 
 	template <typename T>
 	T GetProperty(const FName& PropertyName, const T& Default = T()) const

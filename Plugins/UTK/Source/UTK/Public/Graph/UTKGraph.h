@@ -11,4 +11,6 @@ class UUTKGraph : public UEdGraph
 
 public:
 	UUTKGraph();
+
+	virtual void PostLoad() override;
 };
