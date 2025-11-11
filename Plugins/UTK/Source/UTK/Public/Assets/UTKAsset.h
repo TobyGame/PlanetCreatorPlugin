@@ -26,7 +26,4 @@ public:
 
 	UPROPERTY(Instanced)
 	TObjectPtr<UUTKGraph> Graph = nullptr;
-
-	UPROPERTY()
-	UUTKGraphSaveData* SavedGraph = nullptr;
 };

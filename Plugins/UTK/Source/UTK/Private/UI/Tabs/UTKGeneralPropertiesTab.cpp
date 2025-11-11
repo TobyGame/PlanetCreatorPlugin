@@ -25,7 +25,7 @@ TSharedRef<SWidget> FUTKGeneralPropertiesTab::CreateTabBody(const FWorkflowTabSp
 
 	if (UTKEditor.IsValid())
 	{
-		if (UObject* EditingObject = UTKEditor.Pin()->GetEditingAsset())
+		if (UObject* EditingObject = UTKEditor.Pin()->GetWorkingAsset())
 		{
 			DetailsView->SetObject(EditingObject);
 		}
