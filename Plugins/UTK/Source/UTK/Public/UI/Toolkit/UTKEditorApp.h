@@ -19,6 +19,7 @@ public:
 
 	virtual FName GetToolkitFName() const override { return FName("UTKEditor"); }
 	virtual FText GetBaseToolkitName() const override { return FText::FromString("UTK Editor"); }
+	virtual FText GetToolkitName() const;
 	virtual FString GetWorldCentricTabPrefix() const override { return TEXT("UTKEditor"); }
 	virtual FLinearColor GetWorldCentricTabColorScale() const override { return FLinearColor::White; }
 

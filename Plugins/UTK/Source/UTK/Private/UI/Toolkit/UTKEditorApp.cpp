@@ -6,7 +6,6 @@
 #include "Graph/UTKGraph.h"
 #include "Graph/UTKGraphSchema.h"
 #include "Graph/Nodes/UTKNode.h"
-#include "Editor/UnrealEd/Public/FileHelpers.h"
 
 #define LOCTEXT_NAMESPACE "UTKEditor"
 
@@ -115,6 +114,9 @@ void FUTKEditorApp::OnWorkingGraphChanged(const FEdGraphEditAction& Action)
 	if (bSuppressChangeNotifications) return;
 
 	bWorkingDirty = true;
+	// Update toolkit UI (title/tab) to reflect dirty state; RegenerateMenusAndToolbars is
+	// available on FAssetEditorToolkit/FWorkflowCentricApplication and will trigger a UI refresh.
+	RegenerateMenusAndToolbars();
 }
 
 void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FPropertyChangedEvent& Event)
@@ -126,6 +128,7 @@ void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FProp
 	if (Object == WorkingObject.Get() || Object->IsIn(WorkingObject.Get()))
 	{
 		bWorkingDirty = true;
+		RegenerateMenusAndToolbars();
 	}
 }
 
@@ -138,6 +141,7 @@ void FUTKEditorApp::OnObjectTransected(UObject* Object, const class FTransaction
 	if (Object == WorkingObject.Get() || Object->IsIn(WorkingObject.Get()))
 	{
 		bWorkingDirty = true;
+		RegenerateMenusAndToolbars();
 	}
 }
 
@@ -148,14 +152,10 @@ static void CopyEditableProps(UObject* From, UObject* To)
 	{
 		FProperty* Prop = *It;
 
-		const FString PropNameStr = Prop->GetName();
-		bool bIsGraphProp = (PropNameStr == TEXT("Graph"));
-		(void)bIsGraphProp;
-		if (bIsGraphProp) { continue; }
-
-		uint64 PropFlags = Prop->GetPropertyFlags();
-		if ((PropFlags & CPF_Edit) == 0) { continue; }
-		if ((PropFlags & CPF_Transient) != 0) { continue; }
+		const FName PName = Prop->GetFName();
+		if (PName == TEXT("Graph")) { continue; }
+		if (!Prop->HasAnyPropertyFlags(CPF_Edit)) { continue; }
+		if (Prop->HasAnyPropertyFlags(CPF_Transient)) { continue; }
 
 		Prop->CopyCompleteValue_InContainer(To, From);
 	}
@@ -165,8 +165,8 @@ void FUTKEditorApp::ApplyWorkingToOriginal()
 {
 	if (!EditingObject.Get() || !WorkingObject.Get()) return;
 
-	volatile bool UTK_UNUSED_MODIFY_RESULT = EditingObject->Modify();
-	(void)UTK_UNUSED_MODIFY_RESULT;
+	// Apply changes to the original asset (wrapped in Modify() so Undo/Redo works).
+	EditingObject->Modify();
 
 	CopyEditableProps(WorkingObject.Get(), EditingObject.Get());
 
@@ -174,55 +174,43 @@ void FUTKEditorApp::ApplyWorkingToOriginal()
 	{
 		if (EditingObject->Graph)
 		{
-			volatile bool UTK_UNUSED_GRAPH_MODIFY = EditingObject->Graph->Modify();
-			(void)UTK_UNUSED_GRAPH_MODIFY;
+			EditingObject->Graph->Modify();
 			EditingObject->Graph->ClearFlags(RF_Public | RF_Standalone);
-			(void)EditingObject->Graph->Rename(nullptr,
+			// Rename returns a value; cast to void to avoid "expression result is not used" warnings.
+			EditingObject->Graph->Rename(nullptr,
 				GetTransientPackage(),
 				REN_DontCreateRedirectors | REN_NonTransactional);
 		}
 
 		UUTKGraph* NewGraph = DuplicateObject<UUTKGraph>(WorkingObject->Graph, EditingObject.Get());
-		NewGraph->SetFlags(RF_Transactional);
-		if (!NewGraph->Schema)
+		if (NewGraph)
 		{
-			NewGraph->Schema = UUTKGraphSchema::StaticClass();
+			NewGraph->SetFlags(RF_Transactional);
+			if (!NewGraph->Schema)
+			{
+				NewGraph->Schema = UUTKGraphSchema::StaticClass();
+			}
+			EditingObject->Graph = NewGraph;
 		}
-		EditingObject->Graph = NewGraph;
 	}
 
 	EditingObject->MarkPackageDirty();
 
 	bWorkingDirty = false;
+	// Refresh toolkit UI to remove dirty indicator when changes are applied.
+	RegenerateMenusAndToolbars();
 }
 
 void FUTKEditorApp::SaveAsset_Execute()
 {
+	// If working copy has changes, apply them first so the original assets are up-to-date.
 	if (bWorkingDirty)
 	{
 		ApplyWorkingToOriginal();
 	}
 
-	TArray<UObject*> SaveableObjects;
-	GetSaveableObjects(SaveableObjects);
-
-	TArray<UPackage*> PackagesToSave;
-	for (UObject* Obj : SaveableObjects)
-	{
-		if (!Obj) continue;
-		UPackage* Pkg = Obj->GetOutermost();
-		if (Pkg && !PackagesToSave.Contains(Pkg))
-		{
-			PackagesToSave.Add(Pkg);
-		}
-	}
-
-	if (PackagesToSave.Num() > 0)
-	{
-		FEditorFileUtils::EPromptReturnCode SavedCode = FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, /*bCheckDirty=*/true, /*bPromptToSave=*/false);
-		(void)SavedCode;
-	}
-
+	// Let the base toolkit perform save handling (it will call GetSaveableObjects and the editor
+	// saving helpers as appropriate). We keep our override minimal to follow engine editors.
 	FWorkflowCentricApplication::SaveAsset_Execute();
 }
 
@@ -234,7 +222,7 @@ bool FUTKEditorApp::OnRequestClose(EAssetEditorCloseReason InCloseReason)
 
 	const EAppReturnType::Type Reply = FMessageDialog::Open(
 		EAppMsgType::YesNoCancel,
-		FText::FromString(TEXT("Save changes to this asset before closing?")));
+		LOCTEXT("UTK_ClosePrompt", "Save changes to this asset before closing?"));
 
 	switch (Reply)
 	{
@@ -305,7 +293,7 @@ void FUTKEditorApp::DeleteSelectedNodes()
 	if (SelectedNodes.Num() == 0)
 		return;
 
-	const FScopedTransaction Transaction(FText::FromString(TEXT("Delete Nodes")));
+	const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "UTK_DeleteNode", "Delete Nodes"));
 	UTKGraph->Modify();
 
 	for (UObject* NodeObj : SelectedNodes)
@@ -356,6 +344,28 @@ void FUTKEditorApp::PostUndo(bool bSuccess)
 void FUTKEditorApp::PostRedo(bool bSuccess)
 {
 	FEditorUndoClient::PostRedo(bSuccess);
+}
+
+FText FUTKEditorApp::GetToolkitName() const
+{
+	const FText BaseName = GetBaseToolkitName();
+
+	if (EditingObject.Get())
+	{
+		if (bWorkingDirty)
+		{
+			return FText::FromString(BaseName.ToString() + TEXT(" *"));
+		}
+		if (UPackage* Package = EditingObject->GetOutermost())
+		{
+			if (Package->IsDirty())
+			{
+				return FText::FromString(BaseName.ToString() + TEXT(" *"));
+			}
+		}
+	}
+
+	return BaseName;
 }
 
 #undef LOCTEXT_NAMESPACE
