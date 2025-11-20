@@ -368,4 +368,41 @@ FText FUTKEditorApp::GetToolkitName() const
 	return BaseName;
 }
 
+void FUTKEditorApp::OnGraphSelectionChanged(const TSet<UObject*>& NewSelection)
+{
+	UUTKNode* NewSelectedNode = nullptr;
+
+	// Simple node for now:
+	// - If exactly one node is selected, we track that node.
+	// - If multiple objects are selected, we pick the first UTKNode we find.
+	// - If nothing relevant is selected, we clear the selection.
+	if (NewSelection.Num() == 1)
+	{
+		auto It = NewSelection.begin();
+		if (It)
+		{
+			NewSelectedNode = Cast<UUTKNode>(*It);
+		}
+	}
+	else if (NewSelection.Num() > 1)
+	{
+		for (UObject* Object : NewSelection)
+		{
+			if (UUTKNode* AsNode = Cast<UUTKNode>(Object))
+			{
+				NewSelectedNode = AsNode;
+				break;
+			}
+		}
+	}
+
+	UUTKNode* OldNode = SelectedNode.Get();
+	SelectedNode = NewSelectedNode;
+
+	if (OldNode != NewSelectedNode)
+	{
+		SelectedNodeChanged.Broadcast(NewSelectedNode);
+	}
+}
+
 #undef LOCTEXT_NAMESPACE

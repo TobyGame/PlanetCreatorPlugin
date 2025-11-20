@@ -6,6 +6,9 @@
 class UUTKAsset;
 class UUTKGraph;
 class FUTKEditorMode;
+class UUTKNode;
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FUTKOnSelectedNodeChanged, UUTKNode*)
 
 /**
  * Core class for the UTK Generator Tool Editor
@@ -26,6 +29,11 @@ public:
 	UUTKGraph* GetGraph() const;
 	UUTKAsset* GetWorkingAsset() const { return WorkingObject.Get(); }
 	void SetWorkingGraphUI(TSharedPtr<SGraphEditor> InGrapUI) { GraphUI = InGrapUI; }
+	UUTKNode* GetSelectedNode() const { return SelectedNode.Get(); }
+
+	FUTKOnSelectedNodeChanged& OnSelectedNodeChanged() { return SelectedNodeChanged; }
+
+	void OnGraphSelectionChanged(const TSet<UObject*>& NewSelection);
 
 	virtual void OnClose() override;
 	virtual bool OnRequestClose(EAssetEditorCloseReason InCloseReason) override;
@@ -50,6 +58,9 @@ private:
 	TSharedPtr<FUTKEditorMode> UTKEditorMode;
 	TSharedPtr<SGraphEditor> GraphUI = nullptr;
 	TSharedPtr<FUICommandList> CommandList;
+
+	TWeakObjectPtr<UUTKNode> SelectedNode;
+	FUTKOnSelectedNodeChanged SelectedNodeChanged;
 
 	bool bWorkingDirty = false;
 

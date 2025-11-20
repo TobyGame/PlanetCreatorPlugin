@@ -24,13 +24,21 @@ TSharedRef<SWidget> FUTKGraphTab::CreateTabBody(const FWorkflowTabSpawnInfo& Inf
 	}
 
 	FGraphAppearanceInfo Appearance;
-	Appearance.CornerText = FText::FromString("Terrain Graph");
+	Appearance.CornerText = FText::FromString(TEXT("UTK"));
+
+	SGraphEditor::FGraphEditorEvents GraphEvents;
+	GraphEvents.OnSelectionChanged =
+		SGraphEditor::FOnSelectionChanged::CreateSP(
+			EditorPtr.Get(),
+			&FUTKEditorApp::OnGraphSelectionChanged
+		);
 
 	TSharedPtr<SGraphEditor> GraphEditor =
 		SNew(SGraphEditor)
 		.IsEditable(true)
 		.GraphToEdit(EditorPtr->GetGraph())
-		.AdditionalCommands(EditorPtr->GetToolkitCommands());
+		.AdditionalCommands(EditorPtr->GetToolkitCommands())
+		.GraphEvents(GraphEvents);
 
 	EditorPtr->SetWorkingGraphUI(GraphEditor);
 

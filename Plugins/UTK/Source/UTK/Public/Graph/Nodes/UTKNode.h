@@ -51,6 +51,17 @@ public:
 	const FUTKNodeDiagnostics& GetDiagnostics() const { return Diagnostics; }
 	FUTKNodeDiagnostics& AccessDiagnostics() { return Diagnostics; }
 
+	const TMap<FName, FInstancedStruct>& GetRuntimeProperties() const { return RuntimeProperties; }
+	TMap<FName, FInstancedStruct>& GetRuntimeProperties() { return RuntimeProperties; }
+
+	template <typename T>
+	void SetProperty(FName PropertyName, const T& Value)
+	{
+		FInstancedStruct& Entry = RuntimeProperties.FindOrAdd(PropertyName);
+		Entry.InitializeAs<T>();
+		Entry.GetMutable<T>() = Value;
+	}
+
 private:
 	FUTKNodeDefinition NodeDefinition;
 	FUTKNodeDiagnostics Diagnostics;
