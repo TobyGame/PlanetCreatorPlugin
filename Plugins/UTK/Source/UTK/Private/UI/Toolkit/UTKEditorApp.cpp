@@ -372,10 +372,6 @@ void FUTKEditorApp::OnGraphSelectionChanged(const TSet<UObject*>& NewSelection)
 {
 	UUTKNode* NewSelectedNode = nullptr;
 
-	// Simple node for now:
-	// - If exactly one node is selected, we track that node.
-	// - If multiple objects are selected, we pick the first UTKNode we find.
-	// - If nothing relevant is selected, we clear the selection.
 	if (NewSelection.Num() == 1)
 	{
 		auto It = NewSelection.begin();

@@ -7,6 +7,18 @@ UUTKNode::UUTKNode()
 	NodeGuid = FGuid::NewGuid();
 }
 
+void UUTKNode::PostLoad()
+{
+	Super::PostLoad();
+	RebuildDefinitionFromType();
+}
+
+void UUTKNode::PostDuplicate(bool bDuplicateForPIE)
+{
+	Super::PostDuplicate(bDuplicateForPIE);
+	RebuildDefinitionFromType();
+}
+
 void UUTKNode::AllocateDefaultPins()
 {
 	for (const auto& PinDef : NodeDefinition.Pins)
@@ -24,14 +36,8 @@ FText UUTKNode::GetNodeTitle(ENodeTitleType::Type TitleType) const
 void UUTKNode::SetDefinition(const FUTKNodeDefinition& InDefinition)
 {
 	NodeDefinition = InDefinition;
-
-	for (const auto& Property : NodeDefinition.Properties)
-	{
-		if (!RuntimeProperties.Contains(Property.Name))
-		{
-			RuntimeProperties.Add(Property.Name, Property.Value());
-		}
-	}
+	NodeType = FName(*InDefinition.Name);
+	EnsureSettingsInstance(InDefinition);
 }
 
 const FUTKNodeDefinition& UUTKNode::GetDefinition() const
@@ -39,20 +45,29 @@ const FUTKNodeDefinition& UUTKNode::GetDefinition() const
 	return NodeDefinition;
 }
 
-void UUTKNode::PostLoad()
+void UUTKNode::EnsureSettingsInstance(const FUTKNodeDefinition& Definition)
 {
-	Super::PostLoad();
+	if (Settings)
+		return;
 
-	if (const FUTKNodeDefinition* Def = FUTKNodeFactory::Get().Find(NodeType.ToString()))
+	if (Definition.SettingsClass &&
+		Definition.SettingsClass->IsChildOf(UUTKNodeSettings::StaticClass()))
 	{
-		NodeDefinition = *Def;
-
-		for (const auto& Property : NodeDefinition.Properties)
-		{
-			if (!RuntimeProperties.Contains(Property.Name))
-			{
-				RuntimeProperties.Add(Property.Name, Property.Value());
-			}
-		}
+		Settings = NewObject<UUTKNodeSettings>(
+			this,
+			Definition.SettingsClass,
+			NAME_None,
+			RF_Transactional
+		);
 	}
+}
+
+void UUTKNode::RebuildDefinitionFromType()
+{
+	if (NodeType.IsNone())
+		return;
+
+	FUTKNodeDefinition Definition;
+	if (FUTKNodeFactory::Get().GetDefinition(NodeType, Definition))
+		SetDefinition(Definition);
 }

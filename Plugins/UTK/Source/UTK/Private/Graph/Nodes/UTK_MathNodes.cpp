@@ -1,10 +1,10 @@
 ﻿#include "Graph/Nodes/UTK_MathNodes.h"
+
 #include "Graph/Nodes/UTKNodeExecutionTypes.h"
 #include "Graph/Nodes/UTKNode.h"
 #include "Graph/Nodes/UTKNodeDefinition.h"
 #include "Graph/Nodes/UTKNodeFactory.h"
 #include "Graph/Nodes/UTKNodeMacros.h"
-#include "Graph/Nodes/NodeProperties/UTKPropertyTypes.h"
 #include "Core/UTKTerrainTypes.h"
 
 
@@ -17,11 +17,9 @@ DECLARE_UTK_NODE(
 	Constant,
 	"Constant",
 	"Math",
+	UUTKConstantSettings::StaticClass(),
 	{
 	DEFINE_PIN("Result", false, true)
-	},
-	{
-	DEFINE_PROPERTY("Value", FUTKFloatProperty{ 1.0f }, "Settings")
 	},
 	([](const TArray<FUTKNodeInput>& Inputs,
 			TArray<FUTKNodeOutput>& Outputs,
@@ -35,9 +33,10 @@ DECLARE_UTK_NODE(
 		return;
 		}
 
-		Outputs.SetNum(1);
+		const UUTKConstantSettings* Settings = Node.GetSettingsTyped<UUTKConstantSettings>();
+		const float ConstantValue = Settings ? Settings->Value : 0.0f;
 
-		const float Fill = Node.GetProperty<FUTKFloatProperty>("Value").Value;
+		Outputs.SetNum(1);
 
 		FUTKDomain2D Domain(Ctx.ResolutionX, Ctx.ResolutionY);
 		TSharedPtr<FUTKTerrain> Terrain = MakeShared<FUTKTerrain>(Domain);
@@ -46,21 +45,21 @@ DECLARE_UTK_NODE(
 		TSharedPtr<FUTKBuffer2D> Buffer = HeightLayer.Data;
 		if (!Buffer.IsValid())
 		{
-		Node.AccessDiagnostics().SetMessage(TEXT("Failed to create height buffer."), true);
-		return;
+		Buffer = MakeShared<FUTKBuffer2D>();
+		Buffer->Initialize(Domain.Width, Domain.Height);
+		HeightLayer.Data = Buffer.ToSharedRef();
 		}
 
 		for (int32 Y = 0; Y < Domain.Height; ++Y)
 		{
 		for (int32 X = 0; X < Domain.Width; ++X)
 		{
-		Buffer->Set(X, Y, Fill);
+		Buffer->Set(X, Y, ConstantValue);
 		}
 		}
 
-		FUTKNodeOutput& Out = Outputs[0];
-		Out.Terrain = Terrain;
-		Out.DefaultLayerName = FName(TEXT("Height"));
+		Outputs[0].Terrain = Terrain;
+		Outputs[0].DefaultLayerName = TEXT("Height");
 
 		Node.AccessDiagnostics().SetMessage(TEXT("OK"), false);
 		})
@@ -75,14 +74,11 @@ DECLARE_UTK_NODE(
 	Combine,
 	"Combine",
 	"Math",
+	UUTKCombineSettings::StaticClass(),
 	{
 	DEFINE_PIN("A", true, true)
 	DEFINE_PIN("B", true, true)
 	DEFINE_PIN("Out", false, true)
-	},
-	{
-	DEFINE_PROPERTY("Ratio", FUTKFloatProperty{ 0.5f }, "Settings")
-	DEFINE_PROPERTY("SwapInputs", FUTKBoolProperty{ false }, "Settings")
 	},
 	([](const TArray<FUTKNodeInput>& Inputs,
 			TArray<FUTKNodeOutput>& Outputs,
@@ -104,8 +100,9 @@ DECLARE_UTK_NODE(
 
 		Outputs.SetNum(1);
 
-		const float Ratio = Node.GetProperty<FUTKFloatProperty>("Ratio").Value;
-		const bool bSwap = Node.GetProperty<FUTKBoolProperty>("SwapInputs").Value;
+		const UUTKCombineSettings* Settings = Node.GetSettingsTyped<UUTKCombineSettings>();
+		const float Ratio = Settings ? Settings->Ratio : 0.5f;
+		const bool bSwap = Settings ? Settings->bSwapInputs : false;
 
 		const FUTKNodeInput& InA = bSwap ? Inputs[1] : Inputs[0];
 		const FUTKNodeInput& InB = bSwap ? Inputs[0] : Inputs[1];
@@ -136,8 +133,9 @@ DECLARE_UTK_NODE(
 		TSharedPtr<FUTKBuffer2D> OutBuffer = OutHeight.Data;
 		if (!OutBuffer.IsValid())
 		{
-		Node.AccessDiagnostics().SetMessage(TEXT("Failed to create output buffer."), true);
-		return;
+		OutBuffer = MakeShared<FUTKBuffer2D>();
+		OutBuffer->Initialize(Domain.Width, Domain.Height);
+		OutHeight.Data = OutBuffer.ToSharedRef();
 		}
 
 		for (int32 Y = 0; Y < Domain.Height; ++Y)
@@ -151,9 +149,8 @@ DECLARE_UTK_NODE(
 		}
 		}
 
-		FUTKNodeOutput& Out = Outputs[0];
-		Out.Terrain = OutTerrain;
-		Out.DefaultLayerName = FName(TEXT("Height"));
+		Outputs[0].Terrain = OutTerrain;
+		Outputs[0].DefaultLayerName = TEXT("Height");
 
 		Node.AccessDiagnostics().SetMessage(TEXT("OK"), false);
 		})

@@ -29,3 +29,13 @@ const FUTKNodeDefinition* FUTKNodeFactory::Find(const FString& Name) const
 	}
 	return nullptr;
 }
+
+bool FUTKNodeFactory::GetDefinition(const FName& Type, FUTKNodeDefinition& OutDefinition) const
+{
+	if (const FUTKNodeDefinition* Found = NodeMap.Find(Type.ToString()))
+	{
+		OutDefinition = *Found;
+		return true;
+	}
+	return false;
+}

@@ -29,10 +29,9 @@ public:
 	UUTKGraph* GetGraph() const;
 	UUTKAsset* GetWorkingAsset() const { return WorkingObject.Get(); }
 	void SetWorkingGraphUI(TSharedPtr<SGraphEditor> InGrapUI) { GraphUI = InGrapUI; }
+
 	UUTKNode* GetSelectedNode() const { return SelectedNode.Get(); }
-
 	FUTKOnSelectedNodeChanged& OnSelectedNodeChanged() { return SelectedNodeChanged; }
-
 	void OnGraphSelectionChanged(const TSet<UObject*>& NewSelection);
 
 	virtual void OnClose() override;

@@ -12,6 +12,8 @@ public:
 	void Clear();
 	const FUTKNodeDefinition* Find(const FString& Name) const;
 
+	bool GetDefinition(const FName& Type, FUTKNodeDefinition& OutDefinition) const;
+
 private:
 	TMap<FString, FUTKNodeDefinition> NodeMap;
 };

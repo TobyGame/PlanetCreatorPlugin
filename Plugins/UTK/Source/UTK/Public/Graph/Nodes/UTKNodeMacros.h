@@ -58,15 +58,15 @@
  * This macro creates a function Create_<Name>_NodeDefinition() that the
  * factory can use to register the node type.
  */
-#define DECLARE_UTK_NODE(NodeName, NodeDisplayName, NodeCategory, PinList, PropertyList, LogicBody) \
+#define DECLARE_UTK_NODE(NodeName, NodeDisplayName, NodeCategory, NodeSettingsClass, PinList, LogicBody) \
 	FUTKNodeDefinition Create_##NodeName##_NodeDefinition() \
 	{ \
 		FUTKNodeDefinition Definition; \
 		Definition.Name        = #NodeName; \
 		Definition.DisplayName = NodeDisplayName; \
 		Definition.Category    = NodeCategory; \
+		Definition.SettingsClass = NodeSettingsClass; \
 		Definition.Pins        = TArray<FUTKNodePinDefinition>{ PinList }; \
-		Definition.Properties  = TArray<FUTKNodePropertyDefinition>{ PropertyList }; \
 		Definition.ProcessFunction = LogicBody; \
 		return Definition; \
 	}

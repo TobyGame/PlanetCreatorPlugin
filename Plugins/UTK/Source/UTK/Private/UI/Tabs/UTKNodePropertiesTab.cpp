@@ -1,7 +1,6 @@
 ﻿#include "UI/Tabs/UTKNodePropertiesTab.h"
 
 #include "Graph/Nodes/UTKNode.h"
-#include "Graph/Nodes/NodeProperties/UTKNodePropertyProxy.h"
 #include "UI/Toolkit/UTKEditorApp.h"
 
 FUTKNodePropertiesTab::FUTKNodePropertiesTab(TSharedPtr<FUTKEditorApp> InEditor)
@@ -53,10 +52,10 @@ void FUTKNodePropertiesTab::HandleSelectedNodeChanged(UUTKNode* NewNode)
 	if (!DetailsView.IsValid())
 		return;
 
-	UUTKNodePropertyProxy* Proxy = NewObject<UUTKNodePropertyProxy>();
+	UObject* ObjectToShow = nullptr;
 
 	if (NewNode)
-		Proxy->InitializeFromNode(NewNode);
+		ObjectToShow = NewNode->GetSettings();
 
-	DetailsView->SetObject(Proxy, true);
+	DetailsView->SetObject(ObjectToShow, true);
 }

@@ -2,9 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "EdGraph/EdGraphNode.h"
-#include "StructUtils/InstancedStruct.h"
 #include "UTKNodeDefinition.h"
 #include "Core/UTKNodeDiagnostics.h"
+#include "UTKNodeSettings.h"
 #include "UTKNode.generated.h"
 
 UCLASS()
@@ -24,47 +24,31 @@ public:
 	virtual void AllocateDefaultPins() override;
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 
+	virtual void PostLoad() override;
+	virtual void PostDuplicate(bool bDuplicateForPIE) override;
+
 	void SetDefinition(const FUTKNodeDefinition& InDefinition);
 	const FUTKNodeDefinition& GetDefinition() const;
-
-	virtual void PostLoad() override;
-
-	template <typename T>
-	T GetProperty(const FName& PropertyName, const T& Default = T()) const
-	{
-		const FInstancedStruct* Found = RuntimeProperties.Find(PropertyName);
-		if (!Found || !Found->IsValid())
-		{
-			return Default;
-		}
-
-		const T* ValuePtr = Found->GetPtr<T>();
-
-		if (ValuePtr)
-		{
-			return *ValuePtr;
-		}
-
-		return Default;
-	}
 
 	const FUTKNodeDiagnostics& GetDiagnostics() const { return Diagnostics; }
 	FUTKNodeDiagnostics& AccessDiagnostics() { return Diagnostics; }
 
-	const TMap<FName, FInstancedStruct>& GetRuntimeProperties() const { return RuntimeProperties; }
-	TMap<FName, FInstancedStruct>& GetRuntimeProperties() { return RuntimeProperties; }
+	UUTKNodeSettings* GetSettings() const { return Settings; }
 
-	template <typename T>
-	void SetProperty(FName PropertyName, const T& Value)
+	template <typename TSettings>
+	TSettings* GetSettingsTyped() const
 	{
-		FInstancedStruct& Entry = RuntimeProperties.FindOrAdd(PropertyName);
-		Entry.InitializeAs<T>();
-		Entry.GetMutable<T>() = Value;
+		return Cast<TSettings>(Settings);
 	}
 
+	void EnsureSettingsInstance(const FUTKNodeDefinition& Definition);
+
 private:
+	void RebuildDefinitionFromType();
+
 	FUTKNodeDefinition NodeDefinition;
 	FUTKNodeDiagnostics Diagnostics;
 
-	TMap<FName, FInstancedStruct> RuntimeProperties;
+	UPROPERTY(EditAnywhere, Instanced, Category="UTK | Node")
+	TObjectPtr<UUTKNodeSettings> Settings;
 };

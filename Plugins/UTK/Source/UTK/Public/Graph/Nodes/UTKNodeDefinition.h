@@ -77,7 +77,7 @@ struct FUTKNodeDefinition
 	TArray<FUTKNodePinDefinition> Pins;
 
 	/** All property definitions for this node. */
-	TArray<FUTKNodePropertyDefinition> Properties;
+	UClass* SettingsClass = nullptr;
 
 	/** Processing function implementing the node's behavior. */
 	FUTKNodeProcessFunction ProcessFunction;
