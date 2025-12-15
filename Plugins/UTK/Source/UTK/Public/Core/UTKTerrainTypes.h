@@ -152,6 +152,36 @@ struct UTK_API FUTKTerrain
 		return Layers.Find(Name);
 	}
 
+	/**
+	 * Returns any layer contained in this terrain, or nullptr if there are none.
+	 * This is useful for generic nodes that don't care about specific names.
+	 */
+	const FUTKLayer* FindAnyLayer() const
+	{
+		if (Layers.Num() == 0)
+			return nullptr;
+
+		for (const TPair<FName, FUTKLayer>& Pair : Layers)
+			return &Pair.Value;
+
+		return nullptr;
+	}
+
+	/**
+ 	* Returns any layer contained in this terrain, or nullptr if there are none.
+ 	* This is useful for generic nodes that don't care about specific names.
+ 	*/
+	FUTKLayer* FindAnyLayer()
+	{
+		if (Layers.Num() == 0)
+			return nullptr;
+
+		for (TPair<FName, FUTKLayer>& Pair : Layers)
+			return &Pair.Value;
+
+		return nullptr;
+	}
+
 	/** 
 	 * Find or create a layer with the package domain.
 	 * If created, allocates and sizes the buffer Domain.

@@ -1,6 +1,7 @@
 ﻿#include "Graph/Nodes/UTKNode.h"
 
 #include "Graph/Nodes/UTKNodeFactory.h"
+#include "UI/Toolkit/UTKEditorApp.h"
 
 UUTKNode::UUTKNode()
 {
@@ -43,6 +44,31 @@ void UUTKNode::SetDefinition(const FUTKNodeDefinition& InDefinition)
 const FUTKNodeDefinition& UUTKNode::GetDefinition() const
 {
 	return NodeDefinition;
+}
+
+void UUTKNode::InvalidateCache()
+{
+	OutputCache.Reset();
+}
+
+void UUTKNode::InvalidateOutputCache(FName OutputPinName)
+{
+	OutputCache.Remove(OutputPinName);
+}
+
+FUTKNodeCacheEntry* UUTKNode::FindCacheEntry(FName OutputPinName)
+{
+	return OutputCache.Find(OutputPinName);
+}
+
+const FUTKNodeCacheEntry* UUTKNode::FindCacheEntry(FName OutputPinName) const
+{
+	return OutputCache.Find(OutputPinName);
+}
+
+FUTKNodeCacheEntry& UUTKNode::GetOrAddCacheEntry(FName OutputPinName)
+{
+	return OutputCache.FindOrAdd(OutputPinName);
 }
 
 void UUTKNode::EnsureSettingsInstance(const FUTKNodeDefinition& Definition)

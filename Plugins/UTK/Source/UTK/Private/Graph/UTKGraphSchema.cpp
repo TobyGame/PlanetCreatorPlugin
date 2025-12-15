@@ -1,9 +1,15 @@
 ﻿#include "Graph/UTKGraphSchema.h"
 
+#include "Assets/UTKAsset.h"
 #include "Core/UTKLogger.h"
 #include "Framework/Commands/GenericCommands.h"
+#include "Graph/UTKGraph.h"
 #include "Graph/Nodes/UTKNode.h"
 #include "Graph/Nodes/UTKNodeFactory.h"
+
+#include "Editor.h"
+#include "Editor/UnrealEdEngine.h"
+#include "UnrealEdGlobals.h"
 
 void UUTKGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
@@ -32,7 +38,7 @@ void UUTKGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 	// Optional: Add default nodes to the graph
 }
 
-UEdGraphNode* FUTKSchemaAction_NewNode::PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
+UEdGraphNode* FUTKSchemaAction_NewNode::PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2f& Location, bool bSelectNewNode)
 {
 	if (!ParentGraph)
 		return nullptr;

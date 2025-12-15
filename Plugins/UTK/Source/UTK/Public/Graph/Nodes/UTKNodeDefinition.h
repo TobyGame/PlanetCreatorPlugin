@@ -37,6 +37,26 @@ struct FUTKNodePinDefinition
 	 * output when there is no downstream connection. This helps memory/perf.
 	 */
 	bool bComputeOnlyIfConnected = false;
+
+	FUTKNodePinDefinition() = default;
+
+	/**
+	 * Convenience constructor used by DEFINE_PIN. If no explicit DefaultLayerName
+	 * is provided for an output pin, the pin is also used as the layer
+	 * name, so node implementations don't need to hard-code "Height"/"Mask".
+	 */
+	FUTKNodePinDefinition(
+		FName InName,
+		bool bInInput,
+		bool bInRequired,
+		FName InDefaultLayerName = NAME_None,
+		bool bInComputeOnlyIfConnected = false)
+		: Name(InName)
+		  , bInput(bInInput)
+		  , bRequired(bInRequired)
+		  , DefaultLayerName(InDefaultLayerName.IsNone() && !bInInput ? InName : InDefaultLayerName)
+		  , bComputeOnlyIfConnected(bInComputeOnlyIfConnected)
+	{}
 };
 
 /**

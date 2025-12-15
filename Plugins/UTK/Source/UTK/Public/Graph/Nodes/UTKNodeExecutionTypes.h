@@ -15,6 +15,9 @@ struct UTK_API FUTKNodeExecutionContext
 	int32 ResolutionY = 0;
 	int32 Seed = 0;
 
+	uint64 GraphRevision = 0;
+	uint64 PreviewRevision = 0;
+
 	FUTKNodeExecutionContext() = default;
 
 	FUTKNodeExecutionContext(int32 InResolutionX, int32 InResolutionY, int32 InSeed)

@@ -2,11 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "WorkflowOrientedApp/WorkflowCentricApplication.h"
+#include "Core/UTKTerrainTypes.h"
 
+class UTexture2D;
 class UUTKAsset;
 class UUTKGraph;
 class FUTKEditorMode;
 class UUTKNode;
+class UUTKEditorPreviewSettings;
+class UTexture2D;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FUTKOnSelectedNodeChanged, UUTKNode*)
 
@@ -26,9 +30,20 @@ public:
 	virtual FString GetWorldCentricTabPrefix() const override { return TEXT("UTKEditor"); }
 	virtual FLinearColor GetWorldCentricTabColorScale() const override { return FLinearColor::White; }
 
+	static TSharedPtr<FUTKEditorApp> GetLastInstance();
+
 	UUTKGraph* GetGraph() const;
 	UUTKAsset* GetWorkingAsset() const { return WorkingObject.Get(); }
 	void SetWorkingGraphUI(TSharedPtr<SGraphEditor> InGrapUI) { GraphUI = InGrapUI; }
+	int32 GetPreviewResolution() const;
+	int32 GetPreviewSeed() const;
+
+	TSharedPtr<FUTKTerrain> EvaluatePreview(int32 ResolutionX, int32 ResolutionY, int32 Seed, FName& OutPreviewLayerName);
+	void UpdatePreviewTexture(const TSharedPtr<FUTKTerrain>& Terrain, FName LayerName);
+	UTexture2D* GetPreviewTexture() const { return PreviewTexture; }
+	void EvaluateCurrentSelectionForPreview();
+	FName GetPreviewOutputPinOverrideForNode(const UUTKNode* Node) const;
+	void SetPreviewOutputPinOverrideForNode(const UUTKNode* Node, FName OutputPinName);
 
 	UUTKNode* GetSelectedNode() const { return SelectedNode.Get(); }
 	FUTKOnSelectedNodeChanged& OnSelectedNodeChanged() { return SelectedNodeChanged; }
@@ -49,6 +64,14 @@ public:
 	virtual void PostUndo(bool bSuccess) override;
 	virtual void PostRedo(bool bSuccess) override;
 
+	// -------- Evaluation / caching info -----------
+	uint64 GetGraphRevision() const { return GraphRevision; }
+	uint64 GetPreviewRevision() const { return PreviewRevision; }
+	UUTKNode* GetFocusedNode() const { return FocusedNode.Get(); }
+	void SetFocusedNode(UUTKNode* InNode);
+	void MarkGraphDirty();
+	void MarkPreviewSettingsChanged();
+
 private:
 	TObjectPtr<UUTKAsset> EditingObject = nullptr;
 	TObjectPtr<UUTKAsset> WorkingObject = nullptr;
@@ -62,6 +85,16 @@ private:
 	FUTKOnSelectedNodeChanged SelectedNodeChanged;
 
 	bool bWorkingDirty = false;
+
+	TMap<FGuid, FName> PreviewOutputPinOverrides;
+
+protected:
+	uint64 GraphRevision = 0;
+	uint64 PreviewRevision = 0;
+	TWeakObjectPtr<UUTKNode> FocusedNode;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTexture2D> PreviewTexture = nullptr;
 
 	// When true, change/transaction/property notifications are ignored. Used during initialization
 	// to avoid marking the working asset dirty because of editor-side transient setup operations.
@@ -77,4 +110,9 @@ private:
 	void OnWorkingObjectPropertyChanged(UObject* Object, FPropertyChangedEvent& Event);
 	void OnObjectTransected(UObject* Object, const FTransactionObjectEvent& Event);
 	void ApplyWorkingToOriginal();
+	uint32 ComputeWorkingGraphConnectionHash() const;
+
+	static TWeakPtr<FUTKEditorApp> LastInstance;
+	uint32 CachedGraphConnectionHash = 0;
+	bool bHasCachedGraphConnectionHash = false;
 };

@@ -27,4 +27,10 @@ public:
 	bool bSwapInputs = false;
 };
 
+UCLASS()
+class UUTKMultiOutputTestSettings : public UUTKNodeSettings
+{
+	GENERATED_BODY()
+};
+
 void RegisterMathNodes();

@@ -10,4 +10,18 @@ public:
 
 private:
 	TWeakPtr<FUTKEditorApp> Editor;
+
+	mutable FSlateBrush PreviewBrush;
+
+	const FSlateBrush* GetPreviewBrush() const;
+
+	void RefreshOutputPinOptions() const;
+
+	mutable TArray<TSharedPtr<FName>> OutputPinOptions;
+
+	mutable TSharedPtr<FName> CurrentOutputSelection;
+
+	mutable TSharedPtr<SComboBox<TSharedPtr<FName>>> OutputComboBox;
+
+	FText GetCurrentOutputSelectionText() const;
 };

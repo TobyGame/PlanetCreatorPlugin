@@ -5,12 +5,18 @@
 #include "Framework/Commands/GenericCommands.h"
 #include "Graph/UTKGraph.h"
 #include "Graph/UTKGraphSchema.h"
+#include "Graph/Nodes/UTKNodeSettings.h"
 #include "Graph/Nodes/UTKNode.h"
+#include "Graph/UTKGraphEvaluation.h"
 
 #define LOCTEXT_NAMESPACE "UTKEditor"
 
+TWeakPtr<FUTKEditorApp> FUTKEditorApp::LastInstance;
+
 void FUTKEditorApp::InitUTKEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UObject* UTKAsset)
 {
+	LastInstance = SharedThis(this);
+
 	EditingObject = Cast<UUTKAsset>(UTKAsset);
 
 	if (!EditingObject.Get())
@@ -68,7 +74,33 @@ void FUTKEditorApp::InitUTKEditor(const EToolkitMode::Type Mode, const TSharedPt
 
 	bSuppressChangeNotifications = false;
 
+	CachedGraphConnectionHash = ComputeWorkingGraphConnectionHash();
+	bHasCachedGraphConnectionHash = true;
+
 	bWorkingDirty = false;
+}
+
+TSharedPtr<FUTKEditorApp> FUTKEditorApp::GetLastInstance()
+{
+	return LastInstance.Pin();
+}
+
+void FUTKEditorApp::SetFocusedNode(UUTKNode* InNode)
+{
+	FocusedNode = InNode;
+}
+
+void FUTKEditorApp::MarkGraphDirty()
+{
+	++GraphRevision;
+
+	bWorkingDirty = true;
+	RegenerateMenusAndToolbars();
+}
+
+void FUTKEditorApp::MarkPreviewSettingsChanged()
+{
+	++PreviewRevision;
 }
 
 void FUTKEditorApp::InitializeWorkingAsset(UUTKAsset* InOriginal)
@@ -79,6 +111,7 @@ void FUTKEditorApp::InitializeWorkingAsset(UUTKAsset* InOriginal)
 		NAME_None,
 		~RF_Standalone,
 		InOriginal->GetClass()));
+
 
 	if (WorkingObject.Get())
 	{
@@ -99,6 +132,10 @@ void FUTKEditorApp::InitializeWorkingAsset(UUTKAsset* InOriginal)
 		}
 
 		UTKGraph = WorkingObject->Graph;
+		PreviewOutputPinOverrides.Empty();
+
+		CachedGraphConnectionHash = 0;
+		bHasCachedGraphConnectionHash = false;
 	}
 
 	bWorkingDirty = false;
@@ -109,14 +146,292 @@ UUTKGraph* FUTKEditorApp::GetGraph() const
 	return UTKGraph.Get();
 }
 
+uint32 FUTKEditorApp::ComputeWorkingGraphConnectionHash() const
+{
+	if (!UTKGraph.Get())
+		return 0;
+
+	TArray<uint32> EdgeHashes;
+	EdgeHashes.Reserve(256);
+
+	for (UEdGraphNode* Node : UTKGraph->Nodes)
+	{
+		if (!Node)
+			continue;
+
+		const FGuid NodeGuid = Node->NodeGuid;
+
+		for (UEdGraphPin* Pin : Node->Pins)
+		{
+			if (!Pin)
+				continue;
+
+			if (Pin->Direction != EGPD_Input)
+				continue;
+
+			if (Pin->LinkedTo.Num() <= 0 || !Pin->LinkedTo[0])
+				continue;
+
+			UEdGraphPin* Linked = Pin->LinkedTo[0];
+			UEdGraphNode* UpNode = Linked->GetOwningNode();
+
+			if (!UpNode)
+				continue;
+
+			const FGuid UpGuid = UpNode->NodeGuid;
+
+			uint32 H = 0;
+			H = HashCombine(H, GetTypeHash(UpGuid));
+			H = HashCombine(H, GetTypeHash(Linked->PinName));
+			H = HashCombine(H, GetTypeHash(NodeGuid));
+			H = HashCombine(H, GetTypeHash(Pin->PinName));
+
+			EdgeHashes.Add(H);
+		}
+	}
+
+	Algo::Sort(EdgeHashes);
+
+	uint32 FinalHash = 0;
+	for (uint32 H : EdgeHashes)
+		FinalHash = HashCombine(FinalHash, H);
+
+	return FinalHash;
+}
+
+static bool GetPrimaryOutputPinFromDefinition(UUTKNode* Node, FName& OutPinName, FName& OutLayerName)
+{
+	if (!Node)
+		return false;
+
+	const FUTKNodeDefinition& Def = Node->GetDefinition();
+
+	for (const FUTKNodePinDefinition& Pin : Def.Pins)
+	{
+		if (!Pin.bInput)
+		{
+			OutPinName = Pin.Name;
+			OutLayerName = Pin.DefaultLayerName;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+FName FUTKEditorApp::GetPreviewOutputPinOverrideForNode(const UUTKNode* Node) const
+{
+	if (!Node)
+		return NAME_None;
+
+	if (const FName* Found = PreviewOutputPinOverrides.Find(Node->NodeGuid))
+		return *Found;
+
+	return NAME_None;
+}
+
+void FUTKEditorApp::SetPreviewOutputPinOverrideForNode(const UUTKNode* Node, FName OutputPinName)
+{
+	if (!Node)
+		return;
+
+	if (OutputPinName.IsNone())
+		PreviewOutputPinOverrides.Remove(Node->NodeGuid);
+	else
+		PreviewOutputPinOverrides.Add(Node->NodeGuid, OutputPinName);
+}
+
+TSharedPtr<FUTKTerrain> FUTKEditorApp::EvaluatePreview(int32 ResolutionX, int32 ResolutionY, int32 Seed, FName& OutPreviewLayerName)
+{
+	UUTKNode* PreviewNode = nullptr;
+
+	if (FocusedNode.IsValid())
+		PreviewNode = FocusedNode.Get();
+	else
+		PreviewNode = SelectedNode.Get();
+
+	if (!PreviewNode)
+		return nullptr;
+
+	const FName OverridePinName = GetPreviewOutputPinOverrideForNode(PreviewNode);
+	const FUTKNodeDefinition& Definition = PreviewNode->GetDefinition();
+
+	FName OutputPinName;
+	FName LayerName;
+
+	bool bFoundPin = false;
+
+	if (!OverridePinName.IsNone())
+	{
+		for (const FUTKNodePinDefinition& Pin : Definition.Pins)
+		{
+			if (!Pin.bInput && Pin.Name == OverridePinName)
+			{
+				OutputPinName = Pin.Name;
+				LayerName = Pin.DefaultLayerName;
+				bFoundPin = true;
+				break;
+			}
+		}
+
+		if (!bFoundPin)
+			const_cast<FUTKEditorApp*>(this)->SetPreviewOutputPinOverrideForNode(PreviewNode, NAME_None);
+	}
+
+	if (!bFoundPin)
+	{
+		if (!GetPrimaryOutputPinFromDefinition(PreviewNode, OutputPinName, LayerName))
+			return nullptr;
+	}
+
+	FUTKNodeExecutionContext Ctx(ResolutionX, ResolutionY, Seed);
+	Ctx.GraphRevision = GraphRevision;
+	Ctx.PreviewRevision = PreviewRevision;
+
+	TSharedPtr<FUTKTerrain> Terrain = EvaluateNodeOutput(PreviewNode, OutputPinName, Ctx);
+
+	OutPreviewLayerName = LayerName;
+	return Terrain;
+}
+
+void FUTKEditorApp::UpdatePreviewTexture(const TSharedPtr<FUTKTerrain>& Terrain, FName LayerName)
+{
+	if (!Terrain.IsValid() || !Terrain->IsValid())
+	{
+		PreviewTexture = nullptr;
+		return;
+	}
+
+	const FUTKLayer* Layer = Terrain->FindLayer(LayerName);
+
+	if (!Layer)
+	{
+		Layer = Terrain->FindLayer(TEXT("Height"));
+
+		if (!Layer)
+		{
+			PreviewTexture = nullptr;
+			return;
+		}
+	}
+
+	const FUTKBuffer2D& Buffer = *Layer->Data;
+
+	const int32 Width = Buffer.Width;
+	const int32 Height = Buffer.Height;
+
+	if (Width <= 0 || Height <= 0)
+	{
+		PreviewTexture = nullptr;
+		return;
+	}
+
+	float MinValue = TNumericLimits<float>::Max();
+	float MaxValue = TNumericLimits<float>::Lowest();
+
+	for (int32 Y = 0; Y < Height; ++Y)
+	{
+		for (int32 X = 0; X < Width; ++X)
+		{
+			const float V = Buffer.Get(X, Y);
+
+			MinValue = FMath::Min(MinValue, V);
+			MaxValue = FMath::Max(MaxValue, V);
+		}
+	}
+
+	if (!FMath::IsFinite(MinValue) || !FMath::IsFinite(MaxValue) || MinValue >= MaxValue)
+	{
+		MinValue = 0.0f;
+		MaxValue = 1.0f;
+	}
+
+	const float RangeInv = 1.0f / (MaxValue - MinValue);
+
+	const bool bNeedsNewTexture =
+		!PreviewTexture ||
+		PreviewTexture->GetSizeX() != Width ||
+		PreviewTexture->GetSizeY() != Height;
+
+	if (bNeedsNewTexture)
+	{
+		PreviewTexture = UTexture2D::CreateTransient(Width, Height, PF_B8G8R8A8);
+		PreviewTexture->MipGenSettings = TMGS_NoMipmaps;
+		PreviewTexture->SRGB = false;
+	}
+
+	FTexture2DMipMap& Mip = PreviewTexture->GetPlatformData()->Mips[0];
+
+	void* Data = Mip.BulkData.Lock(LOCK_READ_WRITE);
+	FColor* Dest = static_cast<FColor*>(Data);
+
+	for (int32 Y = 0; Y < Height; ++Y)
+	{
+		for (int32 X = 0; X < Width; ++X)
+		{
+			const float V = Buffer.Get(X, Y);
+			const float Normalized = FMath::Clamp((V - MinValue) * RangeInv, 0.0f, 1.0f);
+			const uint8 Gray = static_cast<uint8>(Normalized * 255.0f + 0.5f);
+
+			Dest[Y * Width + X] = FColor(Gray, Gray, Gray, 255);
+		}
+	}
+
+	Mip.BulkData.Unlock();
+	PreviewTexture->UpdateResource();
+}
+
+void FUTKEditorApp::EvaluateCurrentSelectionForPreview()
+{
+	UUTKNode* PreviewNode = nullptr;
+
+	if (FocusedNode.IsValid())
+		PreviewNode = FocusedNode.Get();
+	else
+		PreviewNode = SelectedNode.Get();
+
+	if (!PreviewNode)
+	{
+		PreviewNode = nullptr;
+		return;
+	}
+
+	const int32 PreviewRes = GetPreviewResolution();
+	const int32 PreviewSeed = GetPreviewSeed();
+
+	FName PreviewLayerName(NAME_None);
+
+	TSharedPtr<FUTKTerrain> Terrain =
+		EvaluatePreview(PreviewRes, PreviewRes, PreviewSeed, PreviewLayerName);
+
+	if (!Terrain.IsValid())
+	{
+		PreviewTexture = nullptr;
+		return;
+	}
+
+	if (PreviewLayerName.IsNone())
+		PreviewLayerName = TEXT("Height");
+
+	UpdatePreviewTexture(Terrain, PreviewLayerName);
+}
+
 void FUTKEditorApp::OnWorkingGraphChanged(const FEdGraphEditAction& Action)
 {
 	if (bSuppressChangeNotifications) return;
 
-	bWorkingDirty = true;
-	// Update toolkit UI (title/tab) to reflect dirty state; RegenerateMenusAndToolbars is
-	// available on FAssetEditorToolkit/FWorkflowCentricApplication and will trigger a UI refresh.
-	RegenerateMenusAndToolbars();
+	MarkGraphDirty();
+
+	const uint32 NewHash = ComputeWorkingGraphConnectionHash();
+
+	if (!bHasCachedGraphConnectionHash || NewHash != CachedGraphConnectionHash)
+	{
+		CachedGraphConnectionHash = NewHash;
+		bHasCachedGraphConnectionHash = true;
+
+		if (SelectedNode.IsValid())
+			EvaluateCurrentSelectionForPreview();
+	}
 }
 
 void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FPropertyChangedEvent& Event)
@@ -125,10 +440,41 @@ void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FProp
 
 	if (!WorkingObject.Get() || !Object) return;
 
+	bool bShouldReevaluatePreview = false;
+
+	if (UUTKNodeSettings* Settings = Cast<UUTKNodeSettings>(Object))
+	{
+		if (UUTKNode* Selected = SelectedNode.Get())
+		{
+			if (Selected->GetSettings() == Settings)
+			{
+				Selected->InvalidateCache();
+				bShouldReevaluatePreview = true;
+			}
+		}
+	}
+
+	if (Object == WorkingObject.Get())
+	{
+		if (Event.Property)
+		{
+			const FName PropName = Event.Property->GetFName();
+
+			if (PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewResolution) ||
+				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewSeed))
+			{
+				MarkPreviewSettingsChanged();
+				bShouldReevaluatePreview = true;
+			}
+		}
+	}
+
+	if (bShouldReevaluatePreview)
+		EvaluateCurrentSelectionForPreview();
+
 	if (Object == WorkingObject.Get() || Object->IsIn(WorkingObject.Get()))
 	{
-		bWorkingDirty = true;
-		RegenerateMenusAndToolbars();
+		MarkGraphDirty();
 	}
 }
 
@@ -140,8 +486,7 @@ void FUTKEditorApp::OnObjectTransected(UObject* Object, const class FTransaction
 
 	if (Object == WorkingObject.Get() || Object->IsIn(WorkingObject.Get()))
 	{
-		bWorkingDirty = true;
-		RegenerateMenusAndToolbars();
+		MarkGraphDirty();
 	}
 }
 
@@ -398,7 +743,34 @@ void FUTKEditorApp::OnGraphSelectionChanged(const TSet<UObject*>& NewSelection)
 	if (OldNode != NewSelectedNode)
 	{
 		SelectedNodeChanged.Broadcast(NewSelectedNode);
+		EvaluateCurrentSelectionForPreview();
 	}
+}
+
+int32 FUTKEditorApp::GetPreviewResolution() const
+{
+	const int32 DefaultRes = 512;
+
+	if (UUTKAsset* Asset = GetWorkingAsset())
+	{
+		if (Asset->PreviewResolution > 0)
+			return Asset->PreviewResolution;
+	}
+
+	return DefaultRes;
+}
+
+int32 FUTKEditorApp::GetPreviewSeed() const
+{
+	const int32 DefaultSeed = 0;
+
+	if (UUTKAsset* Asset = GetWorkingAsset())
+	{
+		if (Asset->PreviewResolution >= 0)
+			return Asset->PreviewSeed;
+	}
+
+	return DefaultSeed;
 }
 
 #undef LOCTEXT_NAMESPACE
