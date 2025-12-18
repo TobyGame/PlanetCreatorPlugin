@@ -1,6 +1,7 @@
 ﻿#include "UI/Tabs/UTKViewportTab.h"
 #include "Graph/Nodes/UTKNode.h"
 #include "UI/Toolkit/UTKEditorApp.h"
+#include "UI/Viewport/SUTK3DViewport.h"
 
 FUTKViewportTab::FUTKViewportTab(TSharedPtr<FUTKEditorApp> InEditor)
 	: FUTKTabFactory(FName("ViewportTab"), InEditor), Editor(InEditor)
@@ -161,16 +162,10 @@ TSharedRef<SWidget> FUTKViewportTab::CreateTabBody(const FWorkflowTabSpawnInfo& 
 			+ SVerticalBox::Slot()
 			.FillHeight(1.0f)
 			[
-				SNew(SScrollBox)
-				+ SScrollBox::Slot()
+				SNew(SBorder)
 				[
-					SNew(SBox)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					[
-						SNew(SImage)
-						.Image(this, &FUTKViewportTab::GetPreviewBrush)
-					]
+					SNew(SUTK3DViewport)
+					.EditorApp(Editor)
 				]
 			]
 		];
