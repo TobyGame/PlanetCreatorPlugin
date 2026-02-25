@@ -36,7 +36,6 @@ DECLARE_UTK_NODE(
 		const UUTKConstantSettings* Settings = Node.GetSettingsTyped<UUTKConstantSettings>();
 		const float ConstantValue = Settings ? Settings->Value : 0.0f;
 
-		Outputs.SetNum(1);
 
 		if (Outputs.Num() == 0 || Outputs[0].DefaultLayerName.IsNone())
 		{
@@ -105,7 +104,6 @@ DECLARE_UTK_NODE(
 		return;
 		}
 
-		Outputs.SetNum(1);
 
 		if (Outputs.Num() == 0 || Outputs[0].DefaultLayerName.IsNone())
 		{
@@ -235,7 +233,11 @@ DECLARE_UTK_NODE(
 		FUTKDomain2D Domain(Width, Height);
 		TSharedPtr<FUTKTerrain> OutTerrain = MakeShared<FUTKTerrain>(Domain);
 
-		Outputs.SetNum(3);
+		if (Outputs.Num() < 3)
+		{
+		Node.AccessDiagnostics().SetMessage(TEXT("MultiOutputTest: unexpected output count"), true);
+		return;
+		}
 
 		auto PrepareLayer = [&Outputs, &OutTerrain, Width, Height](int32 Index) -> TSharedPtr<FUTKBuffer2D>{
 		if (!Outputs.IsValidIndex(Index))

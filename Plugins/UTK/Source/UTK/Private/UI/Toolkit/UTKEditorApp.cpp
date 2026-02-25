@@ -93,13 +93,19 @@ void FUTKEditorApp::SetFocusedNode(UUTKNode* InNode)
 void FUTKEditorApp::MarkGraphDirty()
 {
 	++GraphRevision;
-
 	bWorkingDirty = true;
+
+	if (bIsClosing)
+		return;
+
 	RegenerateMenusAndToolbars();
 }
 
 void FUTKEditorApp::MarkPreviewSettingsChanged()
 {
+	if (bIsClosing)
+		return;
+
 	++PreviewRevision;
 }
 
@@ -392,7 +398,6 @@ void FUTKEditorApp::EvaluateCurrentSelectionForPreview()
 
 	if (!PreviewNode)
 	{
-		PreviewNode = nullptr;
 		return;
 	}
 
@@ -418,7 +423,7 @@ void FUTKEditorApp::EvaluateCurrentSelectionForPreview()
 
 void FUTKEditorApp::OnWorkingGraphChanged(const FEdGraphEditAction& Action)
 {
-	if (bSuppressChangeNotifications) return;
+	if (bIsClosing || bSuppressChangeNotifications) return;
 
 	MarkGraphDirty();
 
@@ -436,7 +441,7 @@ void FUTKEditorApp::OnWorkingGraphChanged(const FEdGraphEditAction& Action)
 
 void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FPropertyChangedEvent& Event)
 {
-	if (bSuppressChangeNotifications) return;
+	if (bIsClosing || bSuppressChangeNotifications) return;
 
 	if (!WorkingObject.Get() || !Object) return;
 
@@ -480,7 +485,7 @@ void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FProp
 
 void FUTKEditorApp::OnObjectTransected(UObject* Object, const class FTransactionObjectEvent& Event)
 {
-	if (bSuppressChangeNotifications) return;
+	if (bIsClosing || bSuppressChangeNotifications) return;
 
 	if (!WorkingObject.Get() || !Object) return;
 
@@ -542,20 +547,27 @@ void FUTKEditorApp::ApplyWorkingToOriginal()
 	EditingObject->MarkPackageDirty();
 
 	bWorkingDirty = false;
-	// Refresh toolkit UI to remove dirty indicator when changes are applied.
-	RegenerateMenusAndToolbars();
+
+	if (!bIsClosing)
+		RegenerateMenusAndToolbars();
 }
 
 void FUTKEditorApp::SaveAsset_Execute()
 {
+	if (bIsClosing)
+	{
+		if (bWorkingDirty)
+			ApplyWorkingToOriginal();
+
+		return;
+	}
+
 	// If working copy has changes, apply them first so the original assets are up-to-date.
 	if (bWorkingDirty)
 	{
 		ApplyWorkingToOriginal();
 	}
 
-	// Let the base toolkit perform save handling (it will call GetSaveableObjects and the editor
-	// saving helpers as appropriate). We keep our override minimal to follow engine editors.
 	FWorkflowCentricApplication::SaveAsset_Execute();
 }
 
@@ -563,7 +575,11 @@ void FUTKEditorApp::SaveAsset_Execute()
 bool FUTKEditorApp::OnRequestClose(EAssetEditorCloseReason InCloseReason)
 {
 	if (!bWorkingDirty)
+	{
+		bIsClosing = true;
+		bSuppressChangeNotifications = true;
 		return true;
+	}
 
 	const EAppReturnType::Type Reply = FMessageDialog::Open(
 		EAppMsgType::YesNoCancel,
@@ -572,19 +588,30 @@ bool FUTKEditorApp::OnRequestClose(EAssetEditorCloseReason InCloseReason)
 	switch (Reply)
 	{
 	case EAppReturnType::Yes:
-		SaveAsset_Execute();
+		bIsClosing = true;
+		bSuppressChangeNotifications = true;
+		ApplyWorkingToOriginal();
 		return true;
 
 	case EAppReturnType::No:
+		bIsClosing = true;
+		bSuppressChangeNotifications = true;
 		return true;
 
 	default:
+		// User cancelled — do NOT set bIsClosing so the editor remains functional.
 		return false;
 	}
 }
 
 void FUTKEditorApp::OnClose()
 {
+	bIsClosing = true;
+	bSuppressChangeNotifications = true;
+
+	// Clear all delegates to avoid calling into stale objects.
+	SelectedNodeChanged.Clear();
+
 	if (UTKGraph.Get() && GraphChangedListenerHandle.IsValid())
 	{
 		UTKGraph->RemoveOnGraphChangedHandler(GraphChangedListenerHandle);
@@ -604,6 +631,10 @@ void FUTKEditorApp::OnClose()
 	}
 
 	GEditor->UnregisterForUndo(this);
+
+	// Release widget/UObject references that might prevent proper destruction.
+	GraphUI.Reset();
+	PreviewTexture = nullptr;
 
 	FWorkflowCentricApplication::OnClose();
 }
@@ -688,7 +719,10 @@ void FUTKEditorApp::PostUndo(bool bSuccess)
 
 void FUTKEditorApp::PostRedo(bool bSuccess)
 {
-	FEditorUndoClient::PostRedo(bSuccess);
+	if (GraphUI.IsValid())
+	{
+		GraphUI->NotifyGraphChanged();
+	}
 }
 
 FText FUTKEditorApp::GetToolkitName() const
@@ -715,6 +749,8 @@ FText FUTKEditorApp::GetToolkitName() const
 
 void FUTKEditorApp::OnGraphSelectionChanged(const TSet<UObject*>& NewSelection)
 {
+	if (bIsClosing || bSuppressChangeNotifications) return;
+
 	UUTKNode* NewSelectedNode = nullptr;
 
 	if (NewSelection.Num() == 1)
@@ -762,15 +798,12 @@ int32 FUTKEditorApp::GetPreviewResolution() const
 
 int32 FUTKEditorApp::GetPreviewSeed() const
 {
-	const int32 DefaultSeed = 0;
-
 	if (UUTKAsset* Asset = GetWorkingAsset())
 	{
-		if (Asset->PreviewResolution >= 0)
-			return Asset->PreviewSeed;
+		return Asset->PreviewSeed;
 	}
 
-	return DefaultSeed;
+	return 0;
 }
 
 #undef LOCTEXT_NAMESPACE

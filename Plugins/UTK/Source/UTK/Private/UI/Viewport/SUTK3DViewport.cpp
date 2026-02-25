@@ -1,10 +1,15 @@
 ﻿#include "UI/Viewport/SUTK3DViewport.h"
-#include "UI/Viewport/UTK3DViewport.h"
+#include "UI/Viewport/UTK3DViewportClient.h"
 
 void SUTK3DViewport::Construct(const FArguments& InArgs)
 {
 	EditorApp = InArgs._EditorApp;
 	SEditorViewport::Construct(SEditorViewport::FArguments());
+}
+
+SUTK3DViewport::~SUTK3DViewport()
+{
+	ViewportClient.Reset();
 }
 
 TSharedRef<FEditorViewportClient> SUTK3DViewport::MakeEditorViewportClient()

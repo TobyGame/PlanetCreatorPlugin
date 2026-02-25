@@ -70,8 +70,8 @@ struct UTK_API FUTKBuffer2D
 	FORCEINLINE int32 IndexChecked(int32 X, int32 Y) const
 	{
 		check(Width > 0 && Height > 0);
-		check(X >= 0 && X < Height);
-		check(Y >= 0 && Y < Width);
+		check(X >= 0 && X < Width);
+		check(Y >= 0 && Y < Height);
 		return Y * Width + X;
 	}
 

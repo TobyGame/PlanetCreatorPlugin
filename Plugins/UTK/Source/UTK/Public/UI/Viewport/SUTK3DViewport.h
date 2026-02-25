@@ -16,6 +16,8 @@ public:
 
 	void Construct(const FArguments& InArgs);
 
+	virtual ~SUTK3DViewport();
+
 	// SEditorViewport
 	virtual TSharedRef<FEditorViewportClient> MakeEditorViewportClient() override;
 	virtual void BindCommands() override;

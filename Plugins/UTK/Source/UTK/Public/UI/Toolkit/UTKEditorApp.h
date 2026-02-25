@@ -10,7 +10,6 @@ class UUTKGraph;
 class FUTKEditorMode;
 class UUTKNode;
 class UUTKEditorPreviewSettings;
-class UTexture2D;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FUTKOnSelectedNodeChanged, UUTKNode*)
 
@@ -19,7 +18,6 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FUTKOnSelectedNodeChanged, UUTKNode*)
  */
 class FUTKEditorApp : public FWorkflowCentricApplication
                       , public FEditorUndoClient
-                      , public FNotifyHook
 {
 public:
 	void InitUTKEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UObject* UTKAsset);
@@ -85,6 +83,7 @@ private:
 	FUTKOnSelectedNodeChanged SelectedNodeChanged;
 
 	bool bWorkingDirty = false;
+	bool bIsClosing = false;
 
 	TMap<FGuid, FName> PreviewOutputPinOverrides;
 
@@ -93,7 +92,7 @@ protected:
 	uint64 PreviewRevision = 0;
 	TWeakObjectPtr<UUTKNode> FocusedNode;
 
-	UPROPERTY(Transient)
+	// Not a UPROPERTY — this class is not a UObject.
 	TObjectPtr<UTexture2D> PreviewTexture = nullptr;
 
 	// When true, change/transaction/property notifications are ignored. Used during initialization

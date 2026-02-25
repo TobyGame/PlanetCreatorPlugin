@@ -11,6 +11,16 @@ FUTKNodePropertiesTab::FUTKNodePropertiesTab(TSharedPtr<FUTKEditorApp> InEditor)
 	ViewMenuTooltip = FText::FromString(TEXT("Edit UTK node properties"));
 }
 
+FUTKNodePropertiesTab::~FUTKNodePropertiesTab()
+{
+	TSharedPtr<FUTKEditorApp> PinnedEditor = Editor.Pin();
+	if (PinnedEditor.IsValid() && SelectedNodeChangedHandle.IsValid())
+	{
+		PinnedEditor->OnSelectedNodeChanged().Remove(SelectedNodeChangedHandle);
+		SelectedNodeChangedHandle.Reset();
+	}
+}
+
 TSharedRef<SWidget> FUTKNodePropertiesTab::CreateTabBody(const FWorkflowTabSpawnInfo& Info) const
 {
 	TSharedPtr<FUTKEditorApp> EditorPtr = Editor.Pin();
@@ -32,7 +42,7 @@ TSharedRef<SWidget> FUTKNodePropertiesTab::CreateTabBody(const FWorkflowTabSpawn
 
 	DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
 
-	EditorPtr->OnSelectedNodeChanged().AddRaw(
+	SelectedNodeChangedHandle = EditorPtr->OnSelectedNodeChanged().AddRaw(
 		const_cast<FUTKNodePropertiesTab*>(this),
 		&FUTKNodePropertiesTab::HandleSelectedNodeChanged
 	);

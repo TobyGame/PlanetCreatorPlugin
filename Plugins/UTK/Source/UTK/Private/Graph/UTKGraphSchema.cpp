@@ -88,7 +88,7 @@ bool UUTKGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const
 	for (int32 i = B->LinkedTo.Num() - 1; i >= 0; --i)
 	{
 		UEdGraphPin* OldOutput = B->LinkedTo[i];
-		if (OldOutput && !OldOutput->IsPendingKill())
+		if (OldOutput)
 		{
 			OldOutput->BreakLinkTo(B);
 		}

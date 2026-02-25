@@ -8,7 +8,7 @@ FUTKViewportTab::FUTKViewportTab(TSharedPtr<FUTKEditorApp> InEditor)
 {
 	if (InEditor.IsValid())
 	{
-		InEditor->OnSelectedNodeChanged().AddLambda([this](UUTKNode* /*NewNode*/){
+		SelectedNodeChangedHandle = InEditor->OnSelectedNodeChanged().AddLambda([this](UUTKNode* /*NewNode*/){
 			this->RefreshOutputPinOptions();
 
 			if (this->OutputComboBox.IsValid())
@@ -18,6 +18,21 @@ FUTKViewportTab::FUTKViewportTab(TSharedPtr<FUTKEditorApp> InEditor)
 			}
 		});
 	}
+}
+
+FUTKViewportTab::~FUTKViewportTab()
+{
+	TSharedPtr<FUTKEditorApp> PinnedEditor = Editor.Pin();
+
+	if (PinnedEditor.IsValid() && SelectedNodeChangedHandle.IsValid())
+	{
+		PinnedEditor->OnSelectedNodeChanged().Remove(SelectedNodeChangedHandle);
+		SelectedNodeChangedHandle.Reset();
+	}
+
+	OutputComboBox.Reset();
+	CurrentOutputSelection.Reset();
+	OutputPinOptions.Reset();
 }
 
 const FSlateBrush* FUTKViewportTab::GetPreviewBrush() const
@@ -127,29 +142,30 @@ TSharedRef<SWidget> FUTKViewportTab::CreateTabBody(const FWorkflowTabSpawnInfo& 
 							: FText::FromString(TEXT("<None>"));
 						return SNew(STextBlock).Text(Text);
 					})
-					.OnSelectionChanged_Lambda([this, PinnedEditor](TSharedPtr<FName> NewItem, ESelectInfo::Type){
-						if (!PinnedEditor.IsValid())
+					.OnSelectionChanged_Lambda([this, WeakEditor = TWeakPtr<FUTKEditorApp>(PinnedEditor)](TSharedPtr<FName> NewItem, ESelectInfo::Type){
+						TSharedPtr<FUTKEditorApp> Ed = WeakEditor.Pin();
+						if (!Ed.IsValid())
 							return;
 
-						UUTKNode* PreviewNode = PinnedEditor->GetFocusedNode();
+						UUTKNode* PreviewNode = Ed->GetFocusedNode();
 						if (!PreviewNode)
-							PreviewNode = PinnedEditor->GetSelectedNode();
+							PreviewNode = Ed->GetSelectedNode();
 
 						if (!PreviewNode)
 							return;
 
 						if (!NewItem.IsValid())
 						{
-							PinnedEditor->SetPreviewOutputPinOverrideForNode(PreviewNode, NAME_None);
+							Ed->SetPreviewOutputPinOverrideForNode(PreviewNode, NAME_None);
 							this->CurrentOutputSelection.Reset();
 						}
 						else
 						{
-							PinnedEditor->SetPreviewOutputPinOverrideForNode(PreviewNode, *NewItem);
+							Ed->SetPreviewOutputPinOverrideForNode(PreviewNode, *NewItem);
 							this->CurrentOutputSelection = NewItem;
 						}
 
-						PinnedEditor->EvaluateCurrentSelectionForPreview();
+						Ed->EvaluateCurrentSelectionForPreview();
 					})
 					.Content()
 					[

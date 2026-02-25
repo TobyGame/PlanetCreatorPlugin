@@ -6,10 +6,14 @@ class FUTKViewportTab : public FUTKTabFactory
 {
 public:
 	FUTKViewportTab(TSharedPtr<FUTKEditorApp> InEditor);
+	virtual ~FUTKViewportTab();
+
 	virtual TSharedRef<SWidget> CreateTabBody(const FWorkflowTabSpawnInfo& Info) const override;
 
 private:
 	TWeakPtr<FUTKEditorApp> Editor;
+
+	FDelegateHandle SelectedNodeChangedHandle;
 
 	mutable FSlateBrush PreviewBrush;
 
