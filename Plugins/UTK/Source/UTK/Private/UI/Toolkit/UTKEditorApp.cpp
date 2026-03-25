@@ -25,21 +25,7 @@ void FUTKEditorApp::InitUTKEditor(const EToolkitMode::Type Mode, const TSharedPt
 	GEditor->RegisterForUndo(this);
 
 	// Commands list for the editor
-	GetToolkitCommands()->MapAction(
-		FGenericCommands::Get().Delete,
-		FExecuteAction::CreateSP(this, &FUTKEditorApp::DeleteSelectedNodes),
-		FCanExecuteAction::CreateSP(this, &FUTKEditorApp::CanDeleteNodes)
-	);
-
-	GetToolkitCommands()->MapAction(
-		FGenericCommands::Get().Undo,
-		FExecuteAction::CreateSP(this, &FUTKEditorApp::Undo)
-	);
-
-	GetToolkitCommands()->MapAction(
-		FGenericCommands::Get().Redo,
-		FExecuteAction::CreateSP(this, &FUTKEditorApp::Redo)
-	);
+	BindEditorCommands();
 
 	bSuppressChangeNotifications = true;
 
@@ -571,6 +557,24 @@ void FUTKEditorApp::SaveAsset_Execute()
 	FWorkflowCentricApplication::SaveAsset_Execute();
 }
 
+void FUTKEditorApp::BindEditorCommands()
+{
+	GetToolkitCommands()->MapAction(
+		FGenericCommands::Get().Delete,
+		FExecuteAction::CreateSP(this, &FUTKEditorApp::DeleteSelectedNodes),
+		FCanExecuteAction::CreateSP(this, &FUTKEditorApp::CanDeleteNodes)
+	);
+
+	GetToolkitCommands()->MapAction(
+		FGenericCommands::Get().Undo,
+		FExecuteAction::CreateSP(this, &FUTKEditorApp::Undo)
+	);
+
+	GetToolkitCommands()->MapAction(
+		FGenericCommands::Get().Redo,
+		FExecuteAction::CreateSP(this, &FUTKEditorApp::Redo)
+	);
+}
 
 bool FUTKEditorApp::OnRequestClose(EAssetEditorCloseReason InCloseReason)
 {

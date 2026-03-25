@@ -77,7 +77,6 @@ private:
 
 	TSharedPtr<FUTKEditorMode> UTKEditorMode;
 	TSharedPtr<SGraphEditor> GraphUI = nullptr;
-	TSharedPtr<FUICommandList> CommandList;
 
 	TWeakObjectPtr<UUTKNode> SelectedNode;
 	FUTKOnSelectedNodeChanged SelectedNodeChanged;
@@ -110,6 +109,7 @@ private:
 	void OnObjectTransected(UObject* Object, const FTransactionObjectEvent& Event);
 	void ApplyWorkingToOriginal();
 	uint32 ComputeWorkingGraphConnectionHash() const;
+	void BindEditorCommands();
 
 	static TWeakPtr<FUTKEditorApp> LastInstance;
 	uint32 CachedGraphConnectionHash = 0;

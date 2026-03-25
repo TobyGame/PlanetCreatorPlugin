@@ -31,6 +31,11 @@ public:
 	TSharedPtr<FUTK3DViewportClient> GetUtkViewportClient() const { return ViewportClient; }
 
 private:
+	void HandleFramePreview();
+	void HandleFocusOrigin();
+	void HandleToggleGrid();
+	bool IsGridEnabled() const;
+
 	TWeakPtr<FUTKEditorApp> EditorApp;
 	TSharedPtr<FUTK3DViewportClient> ViewportClient;
 };

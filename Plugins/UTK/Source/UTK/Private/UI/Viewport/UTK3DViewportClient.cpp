@@ -1,6 +1,8 @@
 ﻿#include "UI/Viewport/UTK3DViewportClient.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyLightComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Components/StaticMeshComponent.h"
 
 
 FUTK3DViewportClient::FUTK3DViewportClient(TWeakPtr<FUTKEditorApp> InEditorApp, const TSharedRef<SEditorViewport>& InViewportWidget)
@@ -10,7 +12,7 @@ FUTK3DViewportClient::FUTK3DViewportClient(TWeakPtr<FUTKEditorApp> InEditorApp, 
 {
 	EngineShowFlags.SetGrid(true);
 	DrawHelper.bDrawGrid = true;
-	DrawHelper.bDrawPivot = true;
+	DrawHelper.bDrawPivot = false;
 	EngineShowFlags.SetSelectionOutline(false);
 	EngineShowFlags.SetSelection(false);
 	EngineShowFlags.SetModeWidgets(false);
@@ -43,6 +45,43 @@ FUTK3DViewportClient::~FUTK3DViewportClient()
 FLinearColor FUTK3DViewportClient::GetBackgroundColor() const
 {
 	return FLinearColor(0.03f, 0.03f, 0.03f, 1.0f);
+}
+
+
+void FUTK3DViewportClient::FramePreview()
+{
+	if (FloorComponent)
+	{
+		const FBox Bounds = FloorComponent->Bounds.GetBox();
+		FocusViewportOnBox(Bounds, true);
+		return;
+	}
+
+	FocusOrigin();
+}
+
+void FUTK3DViewportClient::FocusOrigin()
+{
+	const FBox OriginBox(
+		FVector(-500.0f, -500.0f, -50.f),
+		FVector(500.0f, 500.0f, 50.f));
+
+	FocusViewportOnBox(OriginBox, true);
+}
+
+void FUTK3DViewportClient::ToggleGrid()
+{
+	const bool bNewState = !DrawHelper.bDrawGrid;
+
+	DrawHelper.bDrawGrid = bNewState;
+	EngineShowFlags.SetGrid(bNewState);
+
+	Invalidate();
+}
+
+bool FUTK3DViewportClient::IsGridEnabled() const
+{
+	return DrawHelper.bDrawGrid;
 }
 
 void FUTK3DViewportClient::SetupPreviewScene()

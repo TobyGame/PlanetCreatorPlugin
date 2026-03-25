@@ -30,6 +30,11 @@ public:
 	// FEditorViewportClient
 	virtual FLinearColor GetBackgroundColor() const override;
 
+	void FramePreview();
+	void FocusOrigin();
+	void ToggleGrid();
+	bool IsGridEnabled() const;
+
 private:
 	void SetupPreviewScene();
 
