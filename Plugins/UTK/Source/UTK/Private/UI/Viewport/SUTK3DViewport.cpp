@@ -1,4 +1,5 @@
 ﻿#include "UI/Viewport/SUTK3DViewport.h"
+#include "UI/Viewport/SUTK3DViewportToolbar.h"
 #include "UI/Viewport/UTK3DViewportClient.h"
 #include "UI/Viewport/UTKViewportCommands.h"
 
@@ -10,17 +11,29 @@ void SUTK3DViewport::Construct(const FArguments& InArgs)
 		FUTKViewportCommands::Register();
 
 	SEditorViewport::Construct(SEditorViewport::FArguments());
+
+	ToolbarInfoProvider = MakeShared<FUTKViewportToolbarInfoProvider>(SharedThis(this));
 }
 
 SUTK3DViewport::~SUTK3DViewport()
 {
 	ViewportClient.Reset();
+	ToolbarInfoProvider.Reset();
 }
 
 TSharedRef<FEditorViewportClient> SUTK3DViewport::MakeEditorViewportClient()
 {
 	ViewportClient = MakeShared<FUTK3DViewportClient>(EditorApp, SharedThis(this));
 	return ViewportClient.ToSharedRef();
+}
+
+
+TSharedPtr<SWidget> SUTK3DViewport::MakeViewportToolbar()
+{
+	if (!ToolbarInfoProvider.IsValid())
+		ToolbarInfoProvider = MakeShared<FUTKViewportToolbarInfoProvider>(SharedThis(this));
+
+	return SNew(SUTK3DViewportToolbar, ToolbarInfoProvider);
 }
 
 void SUTK3DViewport::BindCommands()

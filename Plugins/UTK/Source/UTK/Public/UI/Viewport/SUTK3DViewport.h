@@ -2,12 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "SEditorViewport.h"
-#include "SCommonEditorViewportToolbarBase.h"
 
 class FUTK3DViewportClient;
 class FUTKEditorApp;
+class FUTKViewportToolbarInfoProvider;
 
-class SUTK3DViewport : public SEditorViewport, public ICommonEditorViewportToolbarInfoProvider
+class SUTK3DViewport : public SEditorViewport
 {
 public:
 	SLATE_BEGIN_ARGS(SUTK3DViewport) {}
@@ -20,13 +20,9 @@ public:
 
 	// SEditorViewport
 	virtual TSharedRef<FEditorViewportClient> MakeEditorViewportClient() override;
+	virtual TSharedPtr<SWidget> MakeViewportToolbar() override;
 	virtual void BindCommands() override;
 	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
-
-	// ICommonEditorViewportToolbarInfoProvider
-	virtual TSharedRef<SEditorViewport> GetViewportWidget() override { return SharedThis(this); }
-	virtual TSharedPtr<FExtender> GetExtenders() const override { return nullptr; }
-	virtual void OnFloatingButtonClicked() override {}
 
 	TSharedPtr<FUTK3DViewportClient> GetUtkViewportClient() const { return ViewportClient; }
 
@@ -38,4 +34,5 @@ private:
 
 	TWeakPtr<FUTKEditorApp> EditorApp;
 	TSharedPtr<FUTK3DViewportClient> ViewportClient;
+	TSharedPtr<FUTKViewportToolbarInfoProvider> ToolbarInfoProvider;
 };
