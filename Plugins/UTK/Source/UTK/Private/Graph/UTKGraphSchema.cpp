@@ -1,15 +1,9 @@
 ﻿#include "Graph/UTKGraphSchema.h"
-
-#include "Assets/UTKAsset.h"
-#include "Core/UTKLogger.h"
-#include "Framework/Commands/GenericCommands.h"
-#include "Graph/UTKGraph.h"
 #include "Graph/Nodes/UTKNode.h"
 #include "Graph/Nodes/UTKNodeFactory.h"
-
 #include "Editor.h"
-#include "Editor/UnrealEdEngine.h"
-#include "UnrealEdGlobals.h"
+
+#define LOCTEXT_NAMESPACE "UTKGraphSchema"
 
 void UUTKGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
@@ -64,13 +58,106 @@ void UUTKGraphSchema::GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMe
 {
 	Super::GetContextMenuActions(Menu, Context);
 
-	UE_LOG(LogUTKEditor, Verbose, TEXT("Building context menu for graph schema."));
+	if (!Menu || !Context)
+		return;
 
-	if (!Context->bIsDebugging)
+	//-------------------------
+	// Pin context menu actions
+	//-------------------------
+	if (Context->Pin)
 	{
-		FToolMenuSection& Section = Menu->FindOrAddSection("UTKGraph");
+		const UEdGraphPin* ContextPin = Context->Pin;
+		const UEdGraphNode* ContextOwnerNode = ContextPin->GetOwningNode();
 
-		Section.AddMenuEntry(FGenericCommands::Get().Delete);
+		TWeakObjectPtr<UEdGraphNode> WeakOwnerNode = const_cast<UEdGraphNode*>(ContextOwnerNode);
+		const FName PinName = ContextPin->PinName;
+		const EEdGraphPinDirection PinDirection = ContextPin->Direction;
+
+		FToolMenuSection& PinSection = Menu->AddSection(
+			"UTKPinActions",
+			LOCTEXT("UTKPinActions", "Pin")
+		);
+
+		PinSection.AddMenuEntry(
+			"UTK_BreakPinLinks",
+			LOCTEXT("UTKBreakPinLinks", "Break Pin Links"),
+			LOCTEXT("UTKBreakPinLinks_Tooltip", "Break all links on this pin."),
+			FSlateIcon(),
+			FToolUIActionChoice(
+				FExecuteAction::CreateLambda([WeakOwnerNode, PinName, PinDirection](){
+					UEdGraphNode* OwnerNode = WeakOwnerNode.Get();
+					if (!OwnerNode)
+						return;
+
+					UEdGraphPin* Pin = OwnerNode->FindPin(PinName, PinDirection);
+					if (!Pin)
+						return;
+
+					const FScopedTransaction Transaction(LOCTEXT("UTKBreakPinLinks_Transaction", "Break Pin Links"));
+
+					OwnerNode->Modify();
+					Pin->Modify();
+					Pin->BreakAllPinLinks();
+				})
+			)
+		);
+	}
+
+	//--------------------------
+	// Node context menu actions
+	//--------------------------
+	if (Context->Node)
+	{
+		const UEdGraphNode* ContextNode = Context->Node;
+		TWeakObjectPtr<UEdGraphNode> WeakNode = const_cast<UEdGraphNode*>(ContextNode);
+
+		FToolMenuSection& NodeSection = Menu->AddSection(
+			"UTKNodeActions",
+			LOCTEXT("UTKNodeActions", "Node")
+		);
+
+		NodeSection.AddMenuEntry(
+			"UTK_BreakNodeLinks",
+			LOCTEXT("UTKBreakNodeLinks", "Break Node Links"),
+			LOCTEXT("UTKBreakNodeLinks_Tooltip", "Break all links connected to this node."),
+			FSlateIcon(),
+			FToolUIActionChoice(
+				FExecuteAction::CreateLambda([WeakNode](){
+					UEdGraphNode* Node = WeakNode.Get();
+					if (!Node)
+						return;
+
+					const FScopedTransaction Transaction(LOCTEXT("UTKBreakNodeLinks_Transaction", "Break Node Links"));
+
+					Node->Modify();
+					Node->BreakAllNodeLinks();
+				})
+			)
+		);
+
+		NodeSection.AddMenuEntry(
+			"UTK_DeleteNode",
+			LOCTEXT("UTKDeleteNode", "Delete Node"),
+			LOCTEXT("UTKDeleteNode_Tooltip", "Delete this node from the graph."),
+			FSlateIcon(),
+			FToolUIActionChoice(
+				FExecuteAction::CreateLambda([WeakNode](){
+					UEdGraphNode* Node = WeakNode.Get();
+					if (!Node)
+						return;
+
+					UEdGraph* Graph = Node->GetGraph();
+					if (!Graph)
+						return;
+
+					const FScopedTransaction Transaction(LOCTEXT("UTKDeleteNode_Transaction", "Delete Node"));
+
+					Graph->Modify();
+					Node->Modify();
+					Node->DestroyNode();
+				})
+			)
+		);
 	}
 }
 bool UUTKGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const
@@ -104,3 +191,5 @@ bool UUTKGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const
 
 	return true;
 }
+
+#undef LOCTEXT_NAMESPACE
