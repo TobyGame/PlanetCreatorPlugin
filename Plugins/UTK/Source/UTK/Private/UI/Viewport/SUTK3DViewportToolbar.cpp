@@ -41,10 +41,15 @@ TSharedRef<SWidget> SUTK3DViewportToolbar::GenerateShowMenu() const
 
 	const FUTKViewportCommands& Commands = FUTKViewportCommands::Get();
 
-	MenuBuilder.BeginSection("UTKViewport", FText::FromString(TEXT("Viewport")));
+	MenuBuilder.BeginSection("UTKViewportNavigation", FText::FromString(TEXT("Navigation")));
 	{
 		MenuBuilder.AddMenuEntry(Commands.FramePreview);
 		MenuBuilder.AddMenuEntry(Commands.FocusOrigin);
+	}
+	MenuBuilder.EndSection();
+
+	MenuBuilder.BeginSection("UTKViewportDisplay", FText::FromString(TEXT("Display")));
+	{
 		MenuBuilder.AddMenuEntry(Commands.ToggleGrid);
 	}
 	MenuBuilder.EndSection();

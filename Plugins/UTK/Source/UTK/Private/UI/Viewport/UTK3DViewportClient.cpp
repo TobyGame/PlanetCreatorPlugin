@@ -23,12 +23,10 @@ FUTK3DViewportClient::FUTK3DViewportClient(TWeakPtr<FUTKEditorApp> InEditorApp, 
 
 	FEditorViewportClient::SetViewMode(VMI_Lit);
 	SetRealtime(false);
-
-	SetViewLocation(FVector(-2000.0f, -2000.0f, 1200.0f));
-	SetViewRotation(FRotator(-25.0f, 45.0f, 0.0f));
-	FEditorViewportClient::SetCameraSpeedSetting(2);
+	SetCameraSpeedSetting(2);
 
 	SetupPreviewScene();
+	ApplyDefaultView();
 }
 
 FUTK3DViewportClient::~FUTK3DViewportClient()
@@ -50,23 +48,12 @@ FLinearColor FUTK3DViewportClient::GetBackgroundColor() const
 
 void FUTK3DViewportClient::FramePreview()
 {
-	if (FloorComponent)
-	{
-		const FBox Bounds = FloorComponent->Bounds.GetBox();
-		FocusViewportOnBox(Bounds, true);
-		return;
-	}
-
-	FocusOrigin();
+	ApplyDefaultView();
 }
 
 void FUTK3DViewportClient::FocusOrigin()
 {
-	const FBox OriginBox(
-		FVector(-500.0f, -500.0f, -50.f),
-		FVector(500.0f, 500.0f, 50.f));
-
-	FocusViewportOnBox(OriginBox, true);
+	ApplyDefaultView();
 }
 
 void FUTK3DViewportClient::ToggleGrid()
@@ -82,6 +69,16 @@ void FUTK3DViewportClient::ToggleGrid()
 bool FUTK3DViewportClient::IsGridEnabled() const
 {
 	return DrawHelper.bDrawGrid;
+}
+
+void FUTK3DViewportClient::ApplyDefaultView()
+{
+	SetViewLocation(FVector(-115.0f, -115.0f, 75.f));
+	SetViewRotation(FRotator(-28.0f, 45.0f, 0.0f));
+
+	SetLookAtLocation(FVector::ZeroVector);
+
+	Invalidate();
 }
 
 void FUTK3DViewportClient::SetupPreviewScene()
@@ -111,10 +108,17 @@ void FUTK3DViewportClient::SetupPreviewScene()
 			PlaneComp->SetStaticMesh(PlaneMesh);
 			PlaneComp->SetMobility(EComponentMobility::Movable);
 			PlaneComp->SetCastShadow(false);
-			PlaneComp->SetRelativeScale3D(FVector(200.0f, 200.0f, 1.0f));
+			PlaneComp->SetRelativeScale3D(FVector(100.0f, 100.0f, 1.0f));
 
 			UTKPreviewScene.AddComponent(PlaneComp, FTransform::Identity);
 			FloorComponent = PlaneComp;
 		}
 	}
+}
+
+FBox FUTK3DViewportClient::GetDefaultPreviewBounds() const
+{
+	return FBox(
+		FVector(-250.0f, -250.0f, -25.0f),
+		FVector(250.0f, 250.0f, 25.0f));
 }

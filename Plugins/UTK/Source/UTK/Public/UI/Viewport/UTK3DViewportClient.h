@@ -34,9 +34,11 @@ public:
 	void FocusOrigin();
 	void ToggleGrid();
 	bool IsGridEnabled() const;
+	void ApplyDefaultView();
 
 private:
 	void SetupPreviewScene();
+	FBox GetDefaultPreviewBounds() const;
 
 	TWeakPtr<FUTKEditorApp> EditorApp;
 	UStaticMeshComponent* FloorComponent = nullptr;
