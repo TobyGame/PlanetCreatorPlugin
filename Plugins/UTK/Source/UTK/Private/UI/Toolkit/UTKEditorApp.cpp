@@ -8,6 +8,7 @@
 #include "Graph/Nodes/UTKNodeSettings.h"
 #include "Graph/Nodes/UTKNode.h"
 #include "Graph/UTKGraphEvaluation.h"
+#include "UI/Graph/UTKGraphCommands.h"
 
 #define LOCTEXT_NAMESPACE "UTKEditor"
 
@@ -23,6 +24,9 @@ void FUTKEditorApp::InitUTKEditor(const EToolkitMode::Type Mode, const TSharedPt
 		return;
 
 	GEditor->RegisterForUndo(this);
+
+	if (!FUTKGraphCommands::IsRegistered())
+		FUTKGraphCommands::Register();
 
 	// Commands list for the editor
 	BindEditorCommands();
@@ -73,7 +77,13 @@ TSharedPtr<FUTKEditorApp> FUTKEditorApp::GetLastInstance()
 
 void FUTKEditorApp::SetFocusedNode(UUTKNode* InNode)
 {
+	if (FocusedNode.Get() == InNode)
+		return;
+
 	FocusedNode = InNode;
+
+	MarkPreviewSettingsChanged();
+	EvaluateCurrentSelectionForPreview();
 }
 
 void FUTKEditorApp::MarkGraphDirty()
@@ -93,6 +103,48 @@ void FUTKEditorApp::MarkPreviewSettingsChanged()
 		return;
 
 	++PreviewRevision;
+}
+
+
+bool FUTKEditorApp::IsNodeFocusedForPreview(const UUTKNode* Node) const
+{
+	return IsPreviewLockedToNode(Node);
+}
+
+bool FUTKEditorApp::IsPreviewLockedToNode(const UUTKNode* Node) const
+{
+	return FocusedNode.Get() == Node;
+}
+
+void FUTKEditorApp::TogglePreviewLockForNode(UUTKNode* InNode)
+{
+	if (!InNode)
+		return;
+
+	// If the same node is already locked, unlock it.
+	// Otherwise, move the lock to this node.
+	if (FocusedNode.Get() == InNode)
+		SetFocusedNode(nullptr);
+	else
+		SetFocusedNode(InNode);
+}
+
+void FUTKEditorApp::TogglePreviewLockForSelectedNode()
+{
+	if (!SelectedNode.IsValid())
+		return;
+
+	TogglePreviewLockForNode(SelectedNode.Get());
+}
+
+bool FUTKEditorApp::CanTogglePreviewLockForSelectedNode() const
+{
+	return SelectedNode.IsValid();
+}
+
+bool FUTKEditorApp::IsSelectedNodeLockedForPreview() const
+{
+	return SelectedNode.IsValid() && IsPreviewLockedToNode(SelectedNode.Get());
 }
 
 void FUTKEditorApp::InitializeWorkingAsset(UUTKAsset* InOriginal)
@@ -574,6 +626,12 @@ void FUTKEditorApp::BindEditorCommands()
 		FGenericCommands::Get().Redo,
 		FExecuteAction::CreateSP(this, &FUTKEditorApp::Redo)
 	);
+
+	GetToolkitCommands()->MapAction(
+		FUTKGraphCommands::Get().LockPreview,
+		FExecuteAction::CreateSP(this, &FUTKEditorApp::TogglePreviewLockForSelectedNode),
+		FCanExecuteAction::CreateSP(this, &FUTKEditorApp::CanTogglePreviewLockForSelectedNode)
+	);
 }
 
 bool FUTKEditorApp::OnRequestClose(EAssetEditorCloseReason InCloseReason)
@@ -603,7 +661,7 @@ bool FUTKEditorApp::OnRequestClose(EAssetEditorCloseReason InCloseReason)
 		return true;
 
 	default:
-		// User cancelled — do NOT set bIsClosing so the editor remains functional.
+		// User canceled — do NOT set bIsClosing so the editor remains functional.
 		return false;
 	}
 }

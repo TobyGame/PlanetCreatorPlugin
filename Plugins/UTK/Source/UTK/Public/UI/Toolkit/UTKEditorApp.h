@@ -49,8 +49,6 @@ public:
 
 	virtual void OnClose() override;
 	virtual bool OnRequestClose(EAssetEditorCloseReason InCloseReason) override;
-	virtual void SaveAsset_Execute() override;
-	virtual void GetSaveableObjects(TArray<UObject*>& OutObjects) const override;
 
 	// Deletion logic
 	void DeleteSelectedNodes();
@@ -69,6 +67,16 @@ public:
 	void SetFocusedNode(UUTKNode* InNode);
 	void MarkGraphDirty();
 	void MarkPreviewSettingsChanged();
+	bool IsNodeFocusedForPreview(const UUTKNode* Node) const;
+
+	UUTKNode* GetLockedPreviewNode() const { return FocusedNode.Get(); }
+	bool HasLockedPreviewNode() const { return FocusedNode.IsValid(); }
+	bool IsPreviewLockedToNode(const UUTKNode* Node) const;
+
+	void TogglePreviewLockForNode(UUTKNode* InNode);
+	void TogglePreviewLockForSelectedNode();
+	bool CanTogglePreviewLockForSelectedNode() const;
+	bool IsSelectedNodeLockedForPreview() const;
 
 private:
 	TObjectPtr<UUTKAsset> EditingObject = nullptr;
@@ -87,6 +95,9 @@ private:
 	TMap<FGuid, FName> PreviewOutputPinOverrides;
 
 protected:
+	virtual void SaveAsset_Execute() override;
+	virtual void GetSaveableObjects(TArray<UObject*>& OutObjects) const override;
+
 	uint64 GraphRevision = 0;
 	uint64 PreviewRevision = 0;
 	TWeakObjectPtr<UUTKNode> FocusedNode;

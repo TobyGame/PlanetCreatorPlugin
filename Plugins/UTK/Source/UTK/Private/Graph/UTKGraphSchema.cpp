@@ -1,4 +1,6 @@
 ﻿#include "Graph/UTKGraphSchema.h"
+#include "UI/Toolkit/UTKEditorApp.h"
+#include "UI/Graph/UTKGraphCommands.h"
 #include "Graph/Nodes/UTKNode.h"
 #include "Graph/Nodes/UTKNodeFactory.h"
 #include "Editor.h"
@@ -115,6 +117,42 @@ void UUTKGraphSchema::GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMe
 			"UTKNodeActions",
 			LOCTEXT("UTKNodeActions", "Node")
 		);
+
+		TSharedPtr<FUTKEditorApp> Editor = FUTKEditorApp::GetLastInstance();
+		if (Editor.IsValid())
+		{
+			TWeakObjectPtr<UEdGraphNode> WeakContextNode = const_cast<UEdGraphNode*>(ContextNode);
+			TWeakPtr<FUTKEditorApp> WeakEditor = Editor;
+
+			TSharedRef<FUICommandList> ContextCommandList = MakeShared<FUICommandList>();
+
+			ContextCommandList->MapAction(
+				FUTKGraphCommands::Get().LockPreview,
+				FExecuteAction::CreateLambda([WeakEditor, WeakContextNode](){
+					TSharedPtr<FUTKEditorApp> PinnedEditor = WeakEditor.Pin();
+					if (!PinnedEditor.IsValid())
+						return;
+
+					UEdGraphNode* GraphNode = WeakContextNode.Get();
+					if (!GraphNode)
+						return;
+
+					UUTKNode* UTKNode = Cast<UUTKNode>(GraphNode);
+					if (!UTKNode)
+						return;
+
+					PinnedEditor->TogglePreviewLockForNode(UTKNode);
+				}),
+				FCanExecuteAction::CreateLambda([WeakContextNode](){
+					return WeakContextNode.IsValid() && Cast<UUTKNode>(WeakContextNode.Get()) != nullptr;
+				})
+			);
+
+			NodeSection.AddMenuEntryWithCommandList(
+				FUTKGraphCommands::Get().LockPreview,
+				Editor->GetToolkitCommands()
+			);
+		}
 
 		NodeSection.AddMenuEntry(
 			"UTK_BreakNodeLinks",
