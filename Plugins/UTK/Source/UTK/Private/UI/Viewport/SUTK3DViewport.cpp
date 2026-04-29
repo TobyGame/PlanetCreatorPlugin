@@ -11,8 +11,6 @@ void SUTK3DViewport::Construct(const FArguments& InArgs)
 		FUTKViewportCommands::Register();
 
 	SEditorViewport::Construct(SEditorViewport::FArguments());
-
-	ToolbarInfoProvider = MakeShared<FUTKViewportToolbarInfoProvider>(SharedThis(this));
 }
 
 SUTK3DViewport::~SUTK3DViewport()

@@ -38,7 +38,6 @@ public:
 
 private:
 	void SetupPreviewScene();
-	FBox GetDefaultPreviewBounds() const;
 
 	TWeakPtr<FUTKEditorApp> EditorApp;
 	UStaticMeshComponent* FloorComponent = nullptr;

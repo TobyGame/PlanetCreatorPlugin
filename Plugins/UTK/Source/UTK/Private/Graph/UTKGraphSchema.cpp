@@ -95,11 +95,19 @@ void UUTKGraphSchema::GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMe
 					if (!Pin)
 						return;
 
+					UEdGraph* Graph = OwnerNode->GetGraph();
+
 					const FScopedTransaction Transaction(LOCTEXT("UTKBreakPinLinks_Transaction", "Break Pin Links"));
+
+					if (Graph)
+						Graph->Modify();
 
 					OwnerNode->Modify();
 					Pin->Modify();
 					Pin->BreakAllPinLinks();
+
+					if (Graph)
+						Graph->NotifyGraphChanged();
 				})
 			)
 		);
@@ -165,10 +173,18 @@ void UUTKGraphSchema::GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMe
 					if (!Node)
 						return;
 
+					UEdGraph* Graph = Node->GetGraph();
+
 					const FScopedTransaction Transaction(LOCTEXT("UTKBreakNodeLinks_Transaction", "Break Node Links"));
+
+					if (Graph)
+						Graph->Modify();
 
 					Node->Modify();
 					Node->BreakAllNodeLinks();
+
+					if (Graph)
+						Graph->NotifyGraphChanged();
 				})
 			)
 		);
@@ -193,6 +209,8 @@ void UUTKGraphSchema::GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMe
 					Graph->Modify();
 					Node->Modify();
 					Node->DestroyNode();
+
+					Graph->NotifyGraphChanged();
 				})
 			)
 		);

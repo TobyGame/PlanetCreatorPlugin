@@ -115,10 +115,3 @@ void FUTK3DViewportClient::SetupPreviewScene()
 		}
 	}
 }
-
-FBox FUTK3DViewportClient::GetDefaultPreviewBounds() const
-{
-	return FBox(
-		FVector(-250.0f, -250.0f, -25.0f),
-		FVector(250.0f, 250.0f, 25.0f));
-}
