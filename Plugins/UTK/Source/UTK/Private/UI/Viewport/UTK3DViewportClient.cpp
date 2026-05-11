@@ -3,6 +3,8 @@
 #include "Components/SkyLightComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Components/StaticMeshComponent.h"
+#include "Preview/UTKTerrainPreviewActor.h"
+#include "Preview/UTKTerrainPreviewComponent.h"
 
 
 FUTK3DViewportClient::FUTK3DViewportClient(TWeakPtr<FUTKEditorApp> InEditorApp, const TSharedRef<SEditorViewport>& InViewportWidget)
@@ -32,6 +34,12 @@ FUTK3DViewportClient::FUTK3DViewportClient(TWeakPtr<FUTKEditorApp> InEditorApp, 
 FUTK3DViewportClient::~FUTK3DViewportClient()
 {
 	Viewport = nullptr;
+
+	if (TerrainPreviewActor.IsValid())
+	{
+		TerrainPreviewActor->Destroy();
+		TerrainPreviewActor.Reset();
+	}
 
 	if (FloorComponent)
 	{
@@ -114,4 +122,67 @@ void FUTK3DViewportClient::SetupPreviewScene()
 			FloorComponent = PlaneComp;
 		}
 	}
+
+	EnsureTerrainPreviewActor();
+}
+
+void FUTK3DViewportClient::SetPreviewTerrain(
+	const FUTKTerrain& Terrain,
+	FName LayerName,
+	const FUTKPreviewTerrainMapping& Mapping)
+{
+	AUTKTerrainPreviewActor* Actor = EnsureTerrainPreviewActor();
+	if (!Actor)
+		return;
+
+	UUTKTerrainPreviewComponent* Component = Actor->GetPreviewComponent();
+	if (!Component)
+		return;
+
+	Component->UpdateFromTerrain(Terrain, LayerName, Mapping);
+
+	Invalidate();
+}
+
+void FUTK3DViewportClient::ClearPreviewTerrain()
+{
+	if (TerrainPreviewActor.IsValid())
+	{
+		if (UUTKTerrainPreviewComponent* Component = TerrainPreviewActor->GetPreviewComponent())
+			Component->ClearPreview();
+	}
+
+	Invalidate();
+}
+
+AUTKTerrainPreviewActor* FUTK3DViewportClient::EnsureTerrainPreviewActor()
+{
+	if (TerrainPreviewActor.IsValid())
+		return TerrainPreviewActor.Get();
+
+	UWorld* PreviewWorld = UTKPreviewScene.GetWorld();
+	if (!PreviewWorld)
+		return nullptr;
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.ObjectFlags = RF_Transient;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.Name = MakeUniqueObjectName(
+		PreviewWorld,
+		AUTKTerrainPreviewActor::StaticClass(),
+		TEXT("UTKTerrainPreviewActor"));
+
+	AUTKTerrainPreviewActor* NewActor = PreviewWorld->SpawnActor<AUTKTerrainPreviewActor>(
+		FVector::ZeroVector,
+		FRotator::ZeroRotator,
+		SpawnParams);
+
+	if (NewActor)
+	{
+		NewActor->SetActorLocation(FVector::ZeroVector);
+		NewActor->SetActorRotation(FRotator::ZeroRotator);
+		TerrainPreviewActor = NewActor;
+	}
+
+	return NewActor;
 }

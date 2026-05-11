@@ -3,9 +3,12 @@
 #include "CoreMinimal.h"
 #include "EditorViewportClient.h"
 #include "PreviewScene.h"
+#include "Preview/UTKPreviewTerrainTypes.h"
 
 class FUTKEditorApp;
 class UStaticMeshComponent;
+struct FUTKTerrain;
+class AUTKTerrainPreviewActor;
 
 
 class FUTKPreviewSceneHolder
@@ -36,9 +39,19 @@ public:
 	bool IsGridEnabled() const;
 	void ApplyDefaultView();
 
+	void SetPreviewTerrain(
+		const FUTKTerrain& Terrain,
+		FName LayerName,
+		const FUTKPreviewTerrainMapping& Mapping);
+
+	void ClearPreviewTerrain();
+
 private:
 	void SetupPreviewScene();
+	AUTKTerrainPreviewActor* EnsureTerrainPreviewActor();
 
 	TWeakPtr<FUTKEditorApp> EditorApp;
+
 	UStaticMeshComponent* FloorComponent = nullptr;
+	TWeakObjectPtr<AUTKTerrainPreviewActor> TerrainPreviewActor;
 };

@@ -33,7 +33,7 @@ public:
 	/**
 	 * Preview random seed used by procedural nodes.
 	 */
-	UPROPERTY(EditAnywhere, Category="UTK|Preview")
+	UPROPERTY(EditAnywhere, Category="Preview")
 	int32 PreviewSeed = 0;
 
 	/**
