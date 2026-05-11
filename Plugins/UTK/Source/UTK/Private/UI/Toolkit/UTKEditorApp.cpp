@@ -160,6 +160,7 @@ void FUTKEditorApp::InitializeWorkingAsset(UUTKAsset* InOriginal)
 	if (WorkingObject.Get())
 	{
 		WorkingObject->SetFlags(RF_Transactional);
+		WorkingObject->RefreshPreviewDerivedValues();
 
 		if (!WorkingObject->Graph)
 		{
@@ -504,8 +505,13 @@ void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FProp
 			const FName PropName = Event.Property->GetFName();
 
 			if (PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewResolution) ||
-				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewSeed))
+				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewSeed) ||
+				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewWidthMeters) ||
+				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewMaxHeightMeters))
 			{
+				if (UUTKAsset* Asset = Cast<UUTKAsset>(Object))
+					Asset->RefreshPreviewDerivedValues();
+
 				MarkPreviewSettingsChanged();
 				bShouldReevaluatePreview = true;
 			}
@@ -557,6 +563,7 @@ void FUTKEditorApp::ApplyWorkingToOriginal()
 	EditingObject->Modify();
 
 	CopyEditableProps(WorkingObject.Get(), EditingObject.Get());
+	EditingObject->RefreshPreviewDerivedValues();
 
 	if (WorkingObject->Graph)
 	{
