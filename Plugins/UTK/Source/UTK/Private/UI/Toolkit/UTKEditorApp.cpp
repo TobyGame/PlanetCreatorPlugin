@@ -105,7 +105,6 @@ void FUTKEditorApp::MarkPreviewSettingsChanged()
 	++PreviewRevision;
 }
 
-
 bool FUTKEditorApp::IsNodeFocusedForPreview(const UUTKNode* Node) const
 {
 	return IsPreviewLockedToNode(Node);
@@ -286,6 +285,18 @@ void FUTKEditorApp::SetPreviewOutputPinOverrideForNode(const UUTKNode* Node, FNa
 		PreviewOutputPinOverrides.Add(Node->NodeGuid, OutputPinName);
 }
 
+FUTKPreviewTerrainMapping FUTKEditorApp::MakePreviewTerrainMapping() const
+{
+	const UUTKAsset* Asset = GetWorkingAsset();
+
+	const int32 Resolution = GetPreviewResolution();
+
+	const float WidthMeters = Asset ? Asset->PreviewWidthMeters : 5000.0f;
+	const float MaxHeightMeters = Asset ? Asset->PreviewMaxHeightMeters : 2500.0f;
+
+	return FUTKPreviewTerrainMapping::Make(Resolution, WidthMeters, MaxHeightMeters);
+}
+
 TSharedPtr<FUTKTerrain> FUTKEditorApp::EvaluatePreview(int32 ResolutionX, int32 ResolutionY, int32 Seed, FName& OutPreviewLayerName)
 {
 	UUTKNode* PreviewNode = nullptr;
@@ -437,6 +448,8 @@ void FUTKEditorApp::EvaluateCurrentSelectionForPreview()
 
 	if (!PreviewNode)
 	{
+		PreviewTexture = nullptr;
+		PreviewTerrainCleared.Broadcast();
 		return;
 	}
 
@@ -448,16 +461,33 @@ void FUTKEditorApp::EvaluateCurrentSelectionForPreview()
 	TSharedPtr<FUTKTerrain> Terrain =
 		EvaluatePreview(PreviewRes, PreviewRes, PreviewSeed, PreviewLayerName);
 
-	if (!Terrain.IsValid())
+	if (!Terrain.IsValid() || !Terrain->IsValid())
 	{
 		PreviewTexture = nullptr;
+		PreviewTerrainCleared.Broadcast();
 		return;
 	}
 
 	if (PreviewLayerName.IsNone())
-		PreviewLayerName = TEXT("Height");
+	{
+		PreviewTexture = nullptr;
+		PreviewTerrainCleared.Broadcast();
+		return;
+	}
+
+
+	const FUTKLayer* PreviewLayer = Terrain->FindLayer(PreviewLayerName);
+	if (!PreviewLayer || !PreviewLayer->Data->IsValid())
+	{
+		PreviewTexture = nullptr;
+		PreviewTerrainCleared.Broadcast();
+		return;
+	}
+
+	const FUTKPreviewTerrainMapping Mapping = MakePreviewTerrainMapping();
 
 	UpdatePreviewTexture(Terrain, PreviewLayerName);
+	PreviewTerrainChanged.Broadcast(Terrain, PreviewLayerName, Mapping);
 }
 
 void FUTKEditorApp::OnWorkingGraphChanged(const FEdGraphEditAction& Action)
@@ -680,6 +710,8 @@ void FUTKEditorApp::OnClose()
 
 	// Clear all delegates to avoid calling into stale objects.
 	SelectedNodeChanged.Clear();
+	PreviewTerrainChanged.Clear();
+	PreviewTerrainCleared.Clear();
 
 	if (UTKGraph.Get() && GraphChangedListenerHandle.IsValid())
 	{

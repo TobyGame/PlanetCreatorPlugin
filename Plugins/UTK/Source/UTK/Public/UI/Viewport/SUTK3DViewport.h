@@ -7,6 +7,9 @@ class FUTK3DViewportClient;
 class FUTKEditorApp;
 class FUTKViewportToolbarInfoProvider;
 
+struct FUTKTerrain;
+struct FUTKPreviewTerrainMapping;
+
 class SUTK3DViewport : public SEditorViewport
 {
 public:
@@ -32,7 +35,16 @@ private:
 	void HandleToggleGrid();
 	bool IsGridEnabled() const;
 
+	void BindEditorPreviewDelegate();
+	void UnbindEditorPreviewDelegate();
+
+	void HandlePreviewTerrainChanged(const TSharedPtr<FUTKTerrain>& Terrain, FName LayerName, const FUTKPreviewTerrainMapping& Mapping);
+	void HandlePreviewTerrainCleared();
+
 	TWeakPtr<FUTKEditorApp> EditorApp;
 	TSharedPtr<FUTK3DViewportClient> ViewportClient;
 	TSharedPtr<FUTKViewportToolbarInfoProvider> ToolbarInfoProvider;
+
+	FDelegateHandle PreviewTerrainChangedHandle;
+	FDelegateHandle PreviewTerrainClearedHandle;
 };

@@ -2,6 +2,8 @@
 #include "UI/Viewport/SUTK3DViewportToolbar.h"
 #include "UI/Viewport/UTK3DViewportClient.h"
 #include "UI/Viewport/UTKViewportCommands.h"
+#include "UI/Toolkit/UTKEditorApp.h"
+#include "Core/UTKTerrainTypes.h"
 
 void SUTK3DViewport::Construct(const FArguments& InArgs)
 {
@@ -11,12 +13,76 @@ void SUTK3DViewport::Construct(const FArguments& InArgs)
 		FUTKViewportCommands::Register();
 
 	SEditorViewport::Construct(SEditorViewport::FArguments());
+
+	BindEditorPreviewDelegate();
 }
 
 SUTK3DViewport::~SUTK3DViewport()
 {
+	UnbindEditorPreviewDelegate();
+
 	ViewportClient.Reset();
 	ToolbarInfoProvider.Reset();
+}
+
+void SUTK3DViewport::BindEditorPreviewDelegate()
+{
+	TSharedPtr<FUTKEditorApp> PinnedEditor = EditorApp.Pin();
+	if (!PinnedEditor.IsValid())
+		return;
+
+	if (!PreviewTerrainChangedHandle.IsValid())
+	{
+		PreviewTerrainChangedHandle =
+			PinnedEditor->OnPreviewTerrainChanged().AddSP(
+				SharedThis(this),
+				&SUTK3DViewport::HandlePreviewTerrainChanged);
+	}
+
+	if (!PreviewTerrainClearedHandle.IsValid())
+	{
+		PreviewTerrainClearedHandle =
+			PinnedEditor->OnPreviewTerrainCleared().AddSP(
+				SharedThis(this),
+				&SUTK3DViewport::HandlePreviewTerrainCleared);
+	}
+}
+
+void SUTK3DViewport::UnbindEditorPreviewDelegate()
+{
+	TSharedPtr<FUTKEditorApp> PinnedEditor = EditorApp.Pin();
+
+	if (PinnedEditor.IsValid())
+	{
+		if (PreviewTerrainChangedHandle.IsValid())
+			PinnedEditor->OnPreviewTerrainChanged().Remove(PreviewTerrainChangedHandle);
+
+		if (PreviewTerrainClearedHandle.IsValid())
+			PinnedEditor->OnPreviewTerrainCleared().Remove(PreviewTerrainClearedHandle);
+	}
+
+	PreviewTerrainChangedHandle.Reset();
+	PreviewTerrainClearedHandle.Reset();
+}
+
+void SUTK3DViewport::HandlePreviewTerrainChanged(const TSharedPtr<FUTKTerrain>& Terrain, FName LayerName, const FUTKPreviewTerrainMapping& Mapping)
+{
+	if (!ViewportClient.IsValid())
+		return;
+
+	if (!Terrain.IsValid() || !Terrain->IsValid() || LayerName.IsNone())
+	{
+		ViewportClient->ClearPreviewTerrain();
+		return;
+	}
+
+	ViewportClient->SetPreviewTerrain(*Terrain, LayerName, Mapping);
+}
+
+void SUTK3DViewport::HandlePreviewTerrainCleared()
+{
+	if (ViewportClient.IsValid())
+		ViewportClient->ClearPreviewTerrain();
 }
 
 TSharedRef<FEditorViewportClient> SUTK3DViewport::MakeEditorViewportClient()

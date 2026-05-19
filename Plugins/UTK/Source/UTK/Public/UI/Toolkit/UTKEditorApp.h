@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "WorkflowOrientedApp/WorkflowCentricApplication.h"
 #include "Core/UTKTerrainTypes.h"
+#include "Preview/UTKPreviewTerrainTypes.h"
 
 class UTexture2D;
 class UUTKAsset;
@@ -12,6 +13,12 @@ class UUTKNode;
 class UUTKEditorPreviewSettings;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FUTKOnSelectedNodeChanged, UUTKNode*)
+DECLARE_MULTICAST_DELEGATE_ThreeParams(
+	FUTKOnPreviewTerrainChanged,
+	const TSharedPtr<FUTKTerrain>&,
+	FName,
+	const FUTKPreviewTerrainMapping&)
+DECLARE_MULTICAST_DELEGATE(FUTKOnPreviewTerrainCleared)
 
 /**
  * Core class for the UTK Generator Tool Editor
@@ -44,7 +51,11 @@ public:
 	void SetPreviewOutputPinOverrideForNode(const UUTKNode* Node, FName OutputPinName);
 
 	UUTKNode* GetSelectedNode() const { return SelectedNode.Get(); }
+
 	FUTKOnSelectedNodeChanged& OnSelectedNodeChanged() { return SelectedNodeChanged; }
+	FUTKOnPreviewTerrainChanged& OnPreviewTerrainChanged() { return PreviewTerrainChanged; }
+	FUTKOnPreviewTerrainCleared& OnPreviewTerrainCleared() { return PreviewTerrainCleared; }
+
 	void OnGraphSelectionChanged(const TSet<UObject*>& NewSelection);
 
 	virtual void OnClose() override;
@@ -88,6 +99,8 @@ private:
 
 	TWeakObjectPtr<UUTKNode> SelectedNode;
 	FUTKOnSelectedNodeChanged SelectedNodeChanged;
+	FUTKOnPreviewTerrainChanged PreviewTerrainChanged;
+	FUTKOnPreviewTerrainCleared PreviewTerrainCleared;
 
 	bool bWorkingDirty = false;
 	bool bIsClosing = false;
@@ -120,6 +133,7 @@ private:
 	void OnObjectTransected(UObject* Object, const FTransactionObjectEvent& Event);
 	void ApplyWorkingToOriginal();
 	uint32 ComputeWorkingGraphConnectionHash() const;
+	FUTKPreviewTerrainMapping MakePreviewTerrainMapping() const;
 	void BindEditorCommands();
 
 	static TWeakPtr<FUTKEditorApp> LastInstance;
