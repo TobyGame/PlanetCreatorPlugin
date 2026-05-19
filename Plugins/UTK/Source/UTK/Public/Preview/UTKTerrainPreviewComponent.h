@@ -28,9 +28,14 @@ public:
 	FName GetCurrentLayerName() const { return CurrentLayerName; }
 	const FUTKPreviewTerrainMapping& GetCurrentMapping() const { return CurrentMapping; }
 
+	EUTKPreviewBackend GetActiveBackendType() const { return ActiveBackendType; }
+	FBoxSphereBounds GetPreviewBounds() const;
+
 private:
 	bool bHasValidPreview = false;
 
 	FName CurrentLayerName = NAME_None;
 	FUTKPreviewTerrainMapping CurrentMapping;
+
+	EUTKPreviewBackend ActiveBackendType = EUTKPreviewBackend::None;
 };

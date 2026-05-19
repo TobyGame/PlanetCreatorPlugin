@@ -2,6 +2,13 @@
 
 #include "CoreMinimal.h"
 
+enum class EUTKPreviewBackend : uint8
+{
+	None,
+	DynamicMesh,
+	HeightTexture,
+	ChunkedHeightTexture,
+};
 
 struct FUTKPreviewTerrainMapping
 {
@@ -28,14 +35,28 @@ struct FUTKPreviewTerrainMapping
 		Mapping.WidthMeters = InWidthMeters;
 		Mapping.MaxHeightMeters = InMaxHeightMeters;
 
-		Mapping.MetersPerPixel = InResolution > 0
-			? InWidthMeters / static_cast<float>(InResolution)
-			: 0.0f;
 
-		Mapping.HeightScaleRatio = InMaxHeightMeters > 0.0f
-			? InWidthMeters / InMaxHeightMeters
-			: 0.0f;
 
 		return Mapping;
+	}
+
+	void RefreshDerivedValues()
+	{
+		MetersPerPixel = Resolution > 0
+			? WidthMeters / static_cast<float>(Resolution)
+			: 0.0f;
+
+		HeightScaleRatio = WidthMeters > 0.0f
+			? MaxHeightMeters / WidthMeters
+			: 0.0f;
+	}
+
+	FVector ToPreviewPosition(float U, float V, float Height01) const
+	{
+		return FVector(
+			(U - 0.5f) * PreviewFootprintUU,
+			(V - 0.5f) * PreviewFootprintUU,
+			Height01 * PreviewFootprintUU * HeightScaleRatio
+		);
 	}
 };

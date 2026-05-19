@@ -3,9 +3,7 @@
 UUTKTerrainPreviewComponent::UUTKTerrainPreviewComponent()
 {
 	SetMobility(EComponentMobility::Movable);
-	SetCastShadow(false);
-	SetVisibility(false);
-	bSelectable = false;
+	SetVisibility(false, true);
 }
 
 void UUTKTerrainPreviewComponent::ClearPreview()
@@ -16,6 +14,7 @@ void UUTKTerrainPreviewComponent::ClearPreview()
 	bHasValidPreview = false;
 	CurrentLayerName = NAME_None;
 	CurrentMapping = FUTKPreviewTerrainMapping();
+	ActiveBackendType = EUTKPreviewBackend::None;
 }
 
 void UUTKTerrainPreviewComponent::UpdateFromTerrain(
@@ -25,7 +24,24 @@ void UUTKTerrainPreviewComponent::UpdateFromTerrain(
 {
 	CurrentLayerName = LayerName;
 	CurrentMapping = Mapping;
+	CurrentMapping.RefreshDerivedValues();
+
 	bHasValidPreview = true;
 
-	SetVisibility(false);
+	ActiveBackendType = EUTKPreviewBackend::None;
+	SetVisibility(false, true);
+}
+
+FBoxSphereBounds UUTKTerrainPreviewComponent::GetPreviewBounds() const
+{
+	if (!bHasValidPreview)
+		return FBoxSphereBounds(GetComponentLocation(), FVector::ZeroVector, 0.0f);
+
+	const float HalfFootprintUU = FMath::Max(0.0f, CurrentMapping.PreviewFootprintUU) * 0.5f;
+	const float PreviewHeightUU = FMath::Max(0.0f, CurrentMapping.PreviewFootprintUU * CurrentMapping.HeightScaleRatio);
+
+	const FVector LocalOrigin(0.0f, 0.0f, PreviewHeightUU * 0.5f);
+	const FVector LocalExtent(HalfFootprintUU, HalfFootprintUU, PreviewHeightUU * 0.5f);
+
+	return FBoxSphereBounds(LocalOrigin, LocalExtent, LocalExtent.Size()).TransformBy(GetComponentTransform());
 }
