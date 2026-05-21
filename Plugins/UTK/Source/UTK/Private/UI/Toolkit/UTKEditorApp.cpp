@@ -886,15 +886,10 @@ void FUTKEditorApp::OnGraphSelectionChanged(const TSet<UObject*>& NewSelection)
 
 int32 FUTKEditorApp::GetPreviewResolution() const
 {
-	const int32 DefaultRes = 512;
+	if (const UUTKAsset* Asset = GetWorkingAsset())
+		return UUTKAsset::NormalizePreviewResolution(Asset->PreviewResolution);
 
-	if (UUTKAsset* Asset = GetWorkingAsset())
-	{
-		if (Asset->PreviewResolution > 0)
-			return Asset->PreviewResolution;
-	}
-
-	return DefaultRes;
+	return 512;
 }
 
 int32 FUTKEditorApp::GetPreviewSeed() const

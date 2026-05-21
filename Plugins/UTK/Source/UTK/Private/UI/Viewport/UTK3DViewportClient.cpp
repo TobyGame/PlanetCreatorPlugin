@@ -141,6 +141,9 @@ void FUTK3DViewportClient::SetPreviewTerrain(
 
 	Component->UpdateFromTerrain(Terrain, LayerName, Mapping);
 
+	if (FloorComponent)
+		FloorComponent->SetVisibility(!Component->HasValidPreview(), true);
+
 	Invalidate();
 }
 
@@ -151,6 +154,9 @@ void FUTK3DViewportClient::ClearPreviewTerrain()
 		if (UUTKTerrainPreviewComponent* Component = TerrainPreviewActor->GetPreviewComponent())
 			Component->ClearPreview();
 	}
+
+	if (FloorComponent)
+		FloorComponent->SetVisibility(true, true);
 
 	Invalidate();
 }

@@ -27,7 +27,7 @@ public:
 	 * Preview heightfield resolution.
 	 * This controls the number of samples used for editor preview evaluation.
 	 */
-	UPROPERTY(EditAnywhere, Category="Preview", meta=(ClampMin="16", UIMin="16"))
+	UPROPERTY(EditAnywhere, Category="Preview", meta=(ClampMin="512", ClampMax="4096", UIMin="512", UIMax="4096", Step="512"))
 	int32 PreviewResolution = 512;
 
 	/**
@@ -77,6 +77,9 @@ public:
 	 */
 	UPROPERTY(VisibleAnywhere, Transient, Category="Preview|Terrain Definition", meta=(DisplayName="Height-Scale Ratio"))
 	float PreviewHeightScaleRatio = 0.0f;
+
+	static bool IsSupportedPreviewResolution(int32 InResolution);
+	static int32 NormalizePreviewResolution(int32 InResolution);
 
 	float GetPreviewMetersPerPixel() const;
 	float GetPreviewHeightScaleRatio() const;

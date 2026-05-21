@@ -29,7 +29,9 @@ public class UTK : ModuleRules
 				"ToolMenus",
 				"AssetTools",
 				"Projects",
-				"RenderCore"
+				"RenderCore",
+				"GeometryCore",
+				"GeometryFramework",
 			}
 			);
 	}

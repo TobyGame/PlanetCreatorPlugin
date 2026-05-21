@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "Components/StaticMeshComponent.h"
+#include "Components/SceneComponent.h"
 #include "Preview/UTKPreviewTerrainTypes.h"
 
 #include "UTKTerrainPreviewComponent.generated.h"
@@ -9,7 +9,7 @@
 struct FUTKTerrain;
 
 UCLASS(ClassGroup=(UTK), meta=(BlueprintSpawnableComponent))
-class UTK_API UUTKTerrainPreviewComponent : public UStaticMeshComponent
+class UTK_API UUTKTerrainPreviewComponent : public USceneComponent
 {
 	GENERATED_BODY()
 
@@ -32,10 +32,18 @@ public:
 	FBoxSphereBounds GetPreviewBounds() const;
 
 private:
+	void ClearRenderBackend();
+	bool UpdateDynamicMeshBackend(const FUTKTerrain& Terrain, FName LayerName, const FUTKPreviewTerrainMapping& Mapping);
+	USceneComponent* EnsureDynamicMeshRenderComponent();
+
+private:
 	bool bHasValidPreview = false;
 
 	FName CurrentLayerName = NAME_None;
 	FUTKPreviewTerrainMapping CurrentMapping;
 
 	EUTKPreviewBackend ActiveBackendType = EUTKPreviewBackend::None;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USceneComponent> ActiveRenderComponent = nullptr;
 };

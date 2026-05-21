@@ -34,8 +34,7 @@ struct FUTKPreviewTerrainMapping
 		Mapping.Resolution = InResolution;
 		Mapping.WidthMeters = InWidthMeters;
 		Mapping.MaxHeightMeters = InMaxHeightMeters;
-
-
+		Mapping.RefreshDerivedValues();
 
 		return Mapping;
 	}
