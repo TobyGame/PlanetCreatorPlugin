@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Preview/UTKPreviewTerrainTypes.h"
+
 #include "UTKAsset.generated.h"
 
 class UUTKGraph;
@@ -35,6 +37,16 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category="Preview")
 	int32 PreviewSeed = 0;
+
+	/**
+	 * Preferred viewport preview backend.
+	 * 
+	 * Dynamic mesh is the only fully implemented backend right now.
+	 * Height Texture and Chucked Height Texture are declared for the next preview
+	 * architecture step and currently resolve to Dynamic Mesh as safe fallback.
+	 */
+	UPROPERTY(EditAnywhere, Category="Preview|Rendering", meta=(DisplayName= "Preview Backend", ToolTip="Preferred viewport preview backend. Height Texture backends are declared for the next phase and currently fall back to Dynamic Mesh."))
+	EUTKPreviewBackend PreviewBackend = EUTKPreviewBackend::DynamicMesh;
 
 	/**
 	 * Conceptual terrain width in meters.

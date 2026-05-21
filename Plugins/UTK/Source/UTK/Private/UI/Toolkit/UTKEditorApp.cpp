@@ -294,7 +294,11 @@ FUTKPreviewTerrainMapping FUTKEditorApp::MakePreviewTerrainMapping() const
 	const float WidthMeters = Asset ? Asset->PreviewWidthMeters : 5000.0f;
 	const float MaxHeightMeters = Asset ? Asset->PreviewMaxHeightMeters : 2500.0f;
 
-	return FUTKPreviewTerrainMapping::Make(Resolution, WidthMeters, MaxHeightMeters);
+	FUTKPreviewTerrainMapping Mapping = FUTKPreviewTerrainMapping::Make(Resolution, WidthMeters, MaxHeightMeters);
+
+	Mapping.PreferredBackend = Asset ? Asset->PreviewBackend : EUTKPreviewBackend::DynamicMesh;
+
+	return Mapping;
 }
 
 FUTKPreviewTerrainMapping FUTKEditorApp::GetPreviewTerrainMapping() const
@@ -541,6 +545,7 @@ void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FProp
 
 			if (PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewResolution) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewSeed) ||
+				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewBackend) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewWidthMeters) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewMaxHeightMeters))
 			{

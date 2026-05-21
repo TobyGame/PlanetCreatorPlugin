@@ -198,17 +198,15 @@ void UUTKTerrainPreviewComponent::UpdateFromTerrain(
 		return;
 	}
 
-	const bool bUpdated = UpdateDynamicMeshBackend(Terrain, LayerName, CurrentMapping);
+	const bool bUpdated = UpdateRenderBackend(Terrain, LayerName, CurrentMapping);
 
 	if (!bUpdated)
 	{
-		ClearPreview();
+		UpdateFlatPreview(CurrentMapping);
 		return;
 	}
 
 	bHasValidPreview = true;
-	ActiveBackendType = EUTKPreviewBackend::DynamicMesh;
-
 	SetVisibility(true, false);
 }
 
@@ -218,7 +216,7 @@ void UUTKTerrainPreviewComponent::UpdateFlatPreview(const FUTKPreviewTerrainMapp
 	CurrentMapping = Mapping;
 	CurrentMapping.RefreshDerivedValues();
 
-	const bool bUpdated = UpdateFlatDynamicMeshBeckend(CurrentMapping);
+	const bool bUpdated = UpdateFlatRenderBackend(CurrentMapping);
 
 	if (!bUpdated)
 	{
@@ -227,8 +225,6 @@ void UUTKTerrainPreviewComponent::UpdateFlatPreview(const FUTKPreviewTerrainMapp
 	}
 
 	bHasValidPreview = true;
-	ActiveBackendType = EUTKPreviewBackend::DynamicMesh;
-
 	SetVisibility(true, false);
 }
 
@@ -263,6 +259,77 @@ void UUTKTerrainPreviewComponent::ClearRenderBackend()
 		DynamicMeshComponent->SetMesh(UE::Geometry::FDynamicMesh3());
 }
 
+EUTKPreviewBackend UUTKTerrainPreviewComponent::ResolveSupportedBackend(EUTKPreviewBackend RequestedBackend) const
+{
+	switch (RequestedBackend)
+	{
+	case EUTKPreviewBackend::None:
+		return EUTKPreviewBackend::None;
+
+	case EUTKPreviewBackend::DynamicMesh:
+		return EUTKPreviewBackend::DynamicMesh;
+
+	case EUTKPreviewBackend::HeightTexture:
+	case EUTKPreviewBackend::ChunkedHeightTexture:
+		return EUTKPreviewBackend::DynamicMesh;
+
+	default:
+		return EUTKPreviewBackend::DynamicMesh;
+	}
+}
+
+bool UUTKTerrainPreviewComponent::UpdateRenderBackend(const FUTKTerrain& Terrain, FName LayerName, const FUTKPreviewTerrainMapping& Mapping)
+{
+	const EUTKPreviewBackend ResolvedBackend = ResolveSupportedBackend(Mapping.PreferredBackend);
+
+	switch (ResolvedBackend)
+	{
+	case EUTKPreviewBackend::None:
+		ClearRenderBackend();
+		ActiveBackendType = EUTKPreviewBackend::None;
+		return false;
+
+	case EUTKPreviewBackend::DynamicMesh:
+		if (UpdateDynamicMeshBackend(Terrain, LayerName, Mapping))
+		{
+			ActiveBackendType = EUTKPreviewBackend::DynamicMesh;
+			return true;
+		}
+		return false;
+
+	case EUTKPreviewBackend::HeightTexture:
+	case EUTKPreviewBackend::ChunkedHeightTexture:
+	default:
+		return false;
+	}
+}
+
+bool UUTKTerrainPreviewComponent::UpdateFlatRenderBackend(const FUTKPreviewTerrainMapping& Mapping)
+{
+	const EUTKPreviewBackend ResolvedBackend = ResolveSupportedBackend(Mapping.PreferredBackend);
+
+	switch (ResolvedBackend)
+	{
+	case EUTKPreviewBackend::None:
+		ClearRenderBackend();
+		ActiveBackendType = EUTKPreviewBackend::None;
+		return false;
+
+	case EUTKPreviewBackend::DynamicMesh:
+		if (UpdateFlatDynamicMeshBackend(Mapping))
+		{
+			ActiveBackendType = EUTKPreviewBackend::DynamicMesh;
+			return true;
+		}
+		return false;
+
+	case EUTKPreviewBackend::HeightTexture:
+	case EUTKPreviewBackend::ChunkedHeightTexture:
+	default:
+		return false;
+	}
+}
+
 bool UUTKTerrainPreviewComponent::UpdateDynamicMeshBackend(const FUTKTerrain& Terrain, FName LayerName, const FUTKPreviewTerrainMapping& Mapping)
 {
 	const FUTKLayer* Layer = Terrain.FindLayer(LayerName);
@@ -288,7 +355,7 @@ bool UUTKTerrainPreviewComponent::UpdateDynamicMeshBackend(const FUTKTerrain& Te
 	return true;
 }
 
-bool UUTKTerrainPreviewComponent::UpdateFlatDynamicMeshBeckend(const FUTKPreviewTerrainMapping& Mapping)
+bool UUTKTerrainPreviewComponent::UpdateFlatDynamicMeshBackend(const FUTKPreviewTerrainMapping& Mapping)
 {
 	USceneComponent* RenderComponent = EnsureDynamicMeshRenderComponent();
 	if (!RenderComponent)

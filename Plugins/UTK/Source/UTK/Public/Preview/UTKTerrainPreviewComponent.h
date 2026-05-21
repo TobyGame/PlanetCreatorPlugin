@@ -35,8 +35,11 @@ public:
 
 private:
 	void ClearRenderBackend();
+	EUTKPreviewBackend ResolveSupportedBackend(EUTKPreviewBackend RequestedBackend) const;
+	bool UpdateRenderBackend(const FUTKTerrain& Terrain, FName LayerName, const FUTKPreviewTerrainMapping& Mapping);
+	bool UpdateFlatRenderBackend(const FUTKPreviewTerrainMapping& Mapping);
 	bool UpdateDynamicMeshBackend(const FUTKTerrain& Terrain, FName LayerName, const FUTKPreviewTerrainMapping& Mapping);
-	bool UpdateFlatDynamicMeshBeckend(const FUTKPreviewTerrainMapping& Mapping);
+	bool UpdateFlatDynamicMeshBackend(const FUTKPreviewTerrainMapping& Mapping);
 	USceneComponent* EnsureDynamicMeshRenderComponent();
 
 private:
