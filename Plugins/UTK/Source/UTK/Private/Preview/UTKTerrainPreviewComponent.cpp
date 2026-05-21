@@ -34,6 +34,18 @@ namespace
 			UTKPreviewMaxDynamicMeshResolution);
 	}
 
+	int32 ComputeDynamicMeshResolution(const FUTKPreviewTerrainMapping& Mapping)
+	{
+		const int32 RequestedResolution = Mapping.Resolution > 0
+			? Mapping.Resolution
+			: 512;
+
+		return FMath::Clamp(
+			RequestedResolution,
+			UTKPreviewMinDynamicMeshResolution,
+			UTKPreviewMaxDynamicMeshResolution);
+	}
+
 	float SampleLayerNearest(const FUTKBuffer2D& Buffer, float U, float V)
 	{
 		if (!Buffer.IsValid())
@@ -52,14 +64,9 @@ namespace
 		return Buffer.Get(X, Y);
 	}
 
-	bool BuildDynamicMeshFromLayer(const FUTKLayer& Layer, const FUTKPreviewTerrainMapping& Mapping, UE::Geometry::FDynamicMesh3& OutMesh)
+	template <typename THeightSampler>
+	bool BuildDynamicMeshGrid(int32 RenderResolution, const FUTKPreviewTerrainMapping& Mapping, THeightSampler&& HeightSampler, UE::Geometry::FDynamicMesh3& OutMesh)
 	{
-		const FUTKBuffer2D& Buffer = Layer.Data.Get();
-
-		if (!Buffer.IsValid())
-			return false;
-
-		const int32 RenderResolution = ComputeDynamicMeshResolution(Buffer, Mapping);
 		if (RenderResolution < UTKPreviewMinDynamicMeshResolution)
 			return false;
 
@@ -88,8 +95,7 @@ namespace
 					? static_cast<float>(X) / static_cast<float>(RenderResolution - 1)
 					: 0.0f;
 
-				const float Height01 = FMath::Clamp(SampleLayerNearest(Buffer, U, V), 0.0f, 1.0f);
-
+				const float Height01 = FMath::Clamp(HeightSampler(U, V), 0.0f, 1.0f);
 				const FVector Position = Mapping.ToPreviewPosition(U, V, Height01);
 
 				const int32 VertexId = Mesh.AppendVertex(
@@ -127,6 +133,37 @@ namespace
 		OutMesh = MoveTemp(Mesh);
 		return true;
 	}
+
+	bool BuildDynamicMeshFromLayer(const FUTKLayer& Layer, const FUTKPreviewTerrainMapping& Mapping, UE::Geometry::FDynamicMesh3& OutMesh)
+	{
+		const FUTKBuffer2D& Buffer = Layer.Data.Get();
+
+		if (!Buffer.IsValid())
+			return false;
+
+		const int32 RenderResolution = ComputeDynamicMeshResolution(Buffer, Mapping);
+
+		return BuildDynamicMeshGrid(
+			RenderResolution,
+			Mapping,
+			[&Buffer](float U, float V){
+				return SampleLayerNearest(Buffer, U, V);
+			},
+			OutMesh);
+	}
+
+	bool BuildFlatDynamicMesh(const FUTKPreviewTerrainMapping& Mapping, UE::Geometry::FDynamicMesh3& OutMesh)
+	{
+		const int32 RenderResolution = ComputeDynamicMeshResolution(Mapping);
+
+		return BuildDynamicMeshGrid(
+			RenderResolution,
+			Mapping,
+			[](float, float){
+				return 0.0f;
+			},
+			OutMesh);
+	}
 }
 
 UUTKTerrainPreviewComponent::UUTKTerrainPreviewComponent()
@@ -162,6 +199,26 @@ void UUTKTerrainPreviewComponent::UpdateFromTerrain(
 	}
 
 	const bool bUpdated = UpdateDynamicMeshBackend(Terrain, LayerName, CurrentMapping);
+
+	if (!bUpdated)
+	{
+		ClearPreview();
+		return;
+	}
+
+	bHasValidPreview = true;
+	ActiveBackendType = EUTKPreviewBackend::DynamicMesh;
+
+	SetVisibility(true, false);
+}
+
+void UUTKTerrainPreviewComponent::UpdateFlatPreview(const FUTKPreviewTerrainMapping& Mapping)
+{
+	CurrentLayerName = NAME_None;
+	CurrentMapping = Mapping;
+	CurrentMapping.RefreshDerivedValues();
+
+	const bool bUpdated = UpdateFlatDynamicMeshBeckend(CurrentMapping);
 
 	if (!bUpdated)
 	{
@@ -222,6 +279,27 @@ bool UUTKTerrainPreviewComponent::UpdateDynamicMeshBackend(const FUTKTerrain& Te
 
 	UE::Geometry::FDynamicMesh3 Mesh;
 	if (!BuildDynamicMeshFromLayer(*Layer, Mapping, Mesh))
+		return false;
+
+	DynamicMeshComponent->SetMesh(MoveTemp(Mesh));
+	DynamicMeshComponent->SetVisibility(true, true);
+
+	ActiveRenderComponent = RenderComponent;
+	return true;
+}
+
+bool UUTKTerrainPreviewComponent::UpdateFlatDynamicMeshBeckend(const FUTKPreviewTerrainMapping& Mapping)
+{
+	USceneComponent* RenderComponent = EnsureDynamicMeshRenderComponent();
+	if (!RenderComponent)
+		return false;
+
+	UDynamicMeshComponent* DynamicMeshComponent = Cast<UDynamicMeshComponent>(RenderComponent);
+	if (!DynamicMeshComponent)
+		return false;
+
+	UE::Geometry::FDynamicMesh3 Mesh;
+	if (!BuildFlatDynamicMesh(Mapping, Mesh))
 		return false;
 
 	DynamicMeshComponent->SetMesh(MoveTemp(Mesh));

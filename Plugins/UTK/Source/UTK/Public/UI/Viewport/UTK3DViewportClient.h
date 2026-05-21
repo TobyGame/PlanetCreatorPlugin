@@ -6,7 +6,6 @@
 #include "Preview/UTKPreviewTerrainTypes.h"
 
 class FUTKEditorApp;
-class UStaticMeshComponent;
 struct FUTKTerrain;
 class AUTKTerrainPreviewActor;
 
@@ -44,6 +43,8 @@ public:
 		FName LayerName,
 		const FUTKPreviewTerrainMapping& Mapping);
 
+	void SetFlatPreviewTerrain(const FUTKPreviewTerrainMapping& Mapping);
+
 	void ClearPreviewTerrain();
 
 private:
@@ -54,7 +55,5 @@ private:
 	void FrameBounds(const FBoxSphereBounds& Bounds);
 
 	TWeakPtr<FUTKEditorApp> EditorApp;
-
-	UStaticMeshComponent* FloorComponent = nullptr;
 	TWeakObjectPtr<AUTKTerrainPreviewActor> TerrainPreviewActor;
 };

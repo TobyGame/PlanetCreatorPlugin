@@ -26,6 +26,8 @@ public:
 	virtual TSharedPtr<SWidget> MakeViewportToolbar() override;
 	virtual void BindCommands() override;
 	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
+	virtual FReply OnPreviewKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
+	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 
 	TSharedPtr<FUTK3DViewportClient> GetUtkViewportClient() const { return ViewportClient; }
 
@@ -38,8 +40,9 @@ private:
 	void BindEditorPreviewDelegate();
 	void UnbindEditorPreviewDelegate();
 
+	void RefreshFlatPreviewFromEditorSettings();
 	void HandlePreviewTerrainChanged(const TSharedPtr<FUTKTerrain>& Terrain, FName LayerName, const FUTKPreviewTerrainMapping& Mapping);
-	void HandlePreviewTerrainCleared();
+	void HandlePreviewTerrainCleared(const FUTKPreviewTerrainMapping& Mapping);
 
 	TWeakPtr<FUTKEditorApp> EditorApp;
 	TSharedPtr<FUTK3DViewportClient> ViewportClient;

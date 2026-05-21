@@ -12,13 +12,17 @@ class FUTKEditorMode;
 class UUTKNode;
 class UUTKEditorPreviewSettings;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FUTKOnSelectedNodeChanged, UUTKNode*)
+DECLARE_MULTICAST_DELEGATE_OneParam(
+	FUTKOnSelectedNodeChanged,
+	UUTKNode*)
 DECLARE_MULTICAST_DELEGATE_ThreeParams(
 	FUTKOnPreviewTerrainChanged,
 	const TSharedPtr<FUTKTerrain>&,
 	FName,
 	const FUTKPreviewTerrainMapping&)
-DECLARE_MULTICAST_DELEGATE(FUTKOnPreviewTerrainCleared)
+DECLARE_MULTICAST_DELEGATE_OneParam(
+	FUTKOnPreviewTerrainCleared,
+	const FUTKPreviewTerrainMapping&)
 
 /**
  * Core class for the UTK Generator Tool Editor
@@ -42,6 +46,7 @@ public:
 	void SetWorkingGraphUI(TSharedPtr<SGraphEditor> InGrapUI) { GraphUI = InGrapUI; }
 	int32 GetPreviewResolution() const;
 	int32 GetPreviewSeed() const;
+	FUTKPreviewTerrainMapping GetPreviewTerrainMapping() const;
 
 	TSharedPtr<FUTKTerrain> EvaluatePreview(int32 ResolutionX, int32 ResolutionY, int32 Seed, FName& OutPreviewLayerName);
 	void UpdatePreviewTexture(const TSharedPtr<FUTKTerrain>& Terrain, FName LayerName);

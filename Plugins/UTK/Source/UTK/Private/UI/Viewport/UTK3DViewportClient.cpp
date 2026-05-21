@@ -40,12 +40,6 @@ FUTK3DViewportClient::~FUTK3DViewportClient()
 		TerrainPreviewActor->Destroy();
 		TerrainPreviewActor.Reset();
 	}
-
-	if (FloorComponent)
-	{
-		UTKPreviewScene.RemoveComponent(FloorComponent);
-		FloorComponent = nullptr;
-	}
 }
 
 FLinearColor FUTK3DViewportClient::GetBackgroundColor() const
@@ -154,26 +148,6 @@ void FUTK3DViewportClient::SetupPreviewScene()
 		UTKPreviewScene.SkyLight->bRealTimeCapture = false;
 	}
 
-	if (!FloorComponent)
-	{
-		UStaticMesh* PlaneMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane"));
-		if (PlaneMesh)
-		{
-			UStaticMeshComponent* PlaneComp = NewObject<UStaticMeshComponent>(
-				GetTransientPackage(),
-				NAME_None,
-				RF_Transient
-			);
-			PlaneComp->SetStaticMesh(PlaneMesh);
-			PlaneComp->SetMobility(EComponentMobility::Movable);
-			PlaneComp->SetCastShadow(false);
-			PlaneComp->SetRelativeScale3D(FVector(100.0f, 100.0f, 1.0f));
-
-			UTKPreviewScene.AddComponent(PlaneComp, FTransform::Identity);
-			FloorComponent = PlaneComp;
-		}
-	}
-
 	EnsureTerrainPreviewActor();
 }
 
@@ -192,8 +166,20 @@ void FUTK3DViewportClient::SetPreviewTerrain(
 
 	Component->UpdateFromTerrain(Terrain, LayerName, Mapping);
 
-	if (FloorComponent)
-		FloorComponent->SetVisibility(!Component->HasValidPreview(), true);
+	Invalidate();
+}
+
+void FUTK3DViewportClient::SetFlatPreviewTerrain(const FUTKPreviewTerrainMapping& Mapping)
+{
+	AUTKTerrainPreviewActor* Actor = EnsureTerrainPreviewActor();
+	if (!Actor)
+		return;
+
+	UUTKTerrainPreviewComponent* Component = Actor->GetPreviewComponent();
+	if (!Component)
+		return;
+
+	Component->UpdateFlatPreview(Mapping);
 
 	Invalidate();
 }
@@ -205,9 +191,6 @@ void FUTK3DViewportClient::ClearPreviewTerrain()
 		if (UUTKTerrainPreviewComponent* Component = TerrainPreviewActor->GetPreviewComponent())
 			Component->ClearPreview();
 	}
-
-	if (FloorComponent)
-		FloorComponent->SetVisibility(true, true);
 
 	Invalidate();
 }

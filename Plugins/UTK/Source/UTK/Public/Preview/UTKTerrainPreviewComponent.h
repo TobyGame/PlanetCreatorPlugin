@@ -23,6 +23,8 @@ public:
 		FName LayerName,
 		const FUTKPreviewTerrainMapping& Mapping);
 
+	void UpdateFlatPreview(const FUTKPreviewTerrainMapping& Mapping);
+
 	bool HasValidPreview() const { return bHasValidPreview; }
 
 	FName GetCurrentLayerName() const { return CurrentLayerName; }
@@ -34,6 +36,7 @@ public:
 private:
 	void ClearRenderBackend();
 	bool UpdateDynamicMeshBackend(const FUTKTerrain& Terrain, FName LayerName, const FUTKPreviewTerrainMapping& Mapping);
+	bool UpdateFlatDynamicMeshBeckend(const FUTKPreviewTerrainMapping& Mapping);
 	USceneComponent* EnsureDynamicMeshRenderComponent();
 
 private:

@@ -15,6 +15,7 @@ void SUTK3DViewport::Construct(const FArguments& InArgs)
 	SEditorViewport::Construct(SEditorViewport::FArguments());
 
 	BindEditorPreviewDelegate();
+	RefreshFlatPreviewFromEditorSettings();
 }
 
 SUTK3DViewport::~SUTK3DViewport()
@@ -72,17 +73,17 @@ void SUTK3DViewport::HandlePreviewTerrainChanged(const TSharedPtr<FUTKTerrain>& 
 
 	if (!Terrain.IsValid() || !Terrain->IsValid() || LayerName.IsNone())
 	{
-		ViewportClient->ClearPreviewTerrain();
+		ViewportClient->SetFlatPreviewTerrain(Mapping);
 		return;
 	}
 
 	ViewportClient->SetPreviewTerrain(*Terrain, LayerName, Mapping);
 }
 
-void SUTK3DViewport::HandlePreviewTerrainCleared()
+void SUTK3DViewport::HandlePreviewTerrainCleared(const FUTKPreviewTerrainMapping& Mapping)
 {
 	if (ViewportClient.IsValid())
-		ViewportClient->ClearPreviewTerrain();
+		ViewportClient->SetFlatPreviewTerrain(Mapping);
 }
 
 TSharedRef<FEditorViewportClient> SUTK3DViewport::MakeEditorViewportClient()
@@ -91,6 +92,17 @@ TSharedRef<FEditorViewportClient> SUTK3DViewport::MakeEditorViewportClient()
 	return ViewportClient.ToSharedRef();
 }
 
+void SUTK3DViewport::RefreshFlatPreviewFromEditorSettings()
+{
+	if (!ViewportClient.IsValid())
+		return;
+
+	const TSharedPtr<FUTKEditorApp> PinnedEditor = EditorApp.Pin();
+	if (!PinnedEditor.IsValid())
+		return;
+
+	ViewportClient->SetFlatPreviewTerrain(PinnedEditor->GetPreviewTerrainMapping());
+}
 
 TSharedPtr<SWidget> SUTK3DViewport::MakeViewportToolbar()
 {
@@ -157,4 +169,20 @@ bool SUTK3DViewport::IsGridEnabled() const
 void SUTK3DViewport::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
 	SEditorViewport::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
+}
+
+FReply SUTK3DViewport::OnPreviewKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (CommandList.IsValid() && CommandList->ProcessCommandBindings(InKeyEvent))
+		return FReply::Handled();
+
+	return SEditorViewport::OnPreviewKeyDown(MyGeometry, InKeyEvent);
+}
+
+FReply SUTK3DViewport::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (CommandList.IsValid() && CommandList->ProcessCommandBindings(InKeyEvent))
+		return FReply::Handled();
+
+	return SEditorViewport::OnKeyDown(MyGeometry, InKeyEvent);
 }

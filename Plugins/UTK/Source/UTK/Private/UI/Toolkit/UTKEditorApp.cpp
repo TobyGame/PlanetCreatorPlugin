@@ -297,6 +297,11 @@ FUTKPreviewTerrainMapping FUTKEditorApp::MakePreviewTerrainMapping() const
 	return FUTKPreviewTerrainMapping::Make(Resolution, WidthMeters, MaxHeightMeters);
 }
 
+FUTKPreviewTerrainMapping FUTKEditorApp::GetPreviewTerrainMapping() const
+{
+	return MakePreviewTerrainMapping();
+}
+
 TSharedPtr<FUTKTerrain> FUTKEditorApp::EvaluatePreview(int32 ResolutionX, int32 ResolutionY, int32 Seed, FName& OutPreviewLayerName)
 {
 	UUTKNode* PreviewNode = nullptr;
@@ -439,6 +444,13 @@ void FUTKEditorApp::UpdatePreviewTexture(const TSharedPtr<FUTKTerrain>& Terrain,
 
 void FUTKEditorApp::EvaluateCurrentSelectionForPreview()
 {
+	const FUTKPreviewTerrainMapping Mapping = MakePreviewTerrainMapping();
+
+	auto BroadcastFlatPreview = [this, &Mapping](){
+		PreviewTexture = nullptr;
+		PreviewTerrainCleared.Broadcast(Mapping);
+	};
+
 	UUTKNode* PreviewNode = nullptr;
 
 	if (FocusedNode.IsValid())
@@ -448,8 +460,7 @@ void FUTKEditorApp::EvaluateCurrentSelectionForPreview()
 
 	if (!PreviewNode)
 	{
-		PreviewTexture = nullptr;
-		PreviewTerrainCleared.Broadcast();
+		BroadcastFlatPreview();
 		return;
 	}
 
@@ -463,28 +474,22 @@ void FUTKEditorApp::EvaluateCurrentSelectionForPreview()
 
 	if (!Terrain.IsValid() || !Terrain->IsValid())
 	{
-		PreviewTexture = nullptr;
-		PreviewTerrainCleared.Broadcast();
+		BroadcastFlatPreview();
 		return;
 	}
 
 	if (PreviewLayerName.IsNone())
 	{
-		PreviewTexture = nullptr;
-		PreviewTerrainCleared.Broadcast();
+		BroadcastFlatPreview();
 		return;
 	}
-
 
 	const FUTKLayer* PreviewLayer = Terrain->FindLayer(PreviewLayerName);
 	if (!PreviewLayer || !PreviewLayer->Data->IsValid())
 	{
-		PreviewTexture = nullptr;
-		PreviewTerrainCleared.Broadcast();
+		BroadcastFlatPreview();
 		return;
 	}
-
-	const FUTKPreviewTerrainMapping Mapping = MakePreviewTerrainMapping();
 
 	UpdatePreviewTexture(Terrain, PreviewLayerName);
 	PreviewTerrainChanged.Broadcast(Terrain, PreviewLayerName, Mapping);
@@ -629,15 +634,6 @@ void FUTKEditorApp::ApplyWorkingToOriginal()
 
 void FUTKEditorApp::SaveAsset_Execute()
 {
-	if (bIsClosing)
-	{
-		if (bWorkingDirty)
-			ApplyWorkingToOriginal();
-
-		return;
-	}
-
-	// If working copy has changes, apply them first so the original assets are up-to-date.
 	if (bWorkingDirty)
 	{
 		ApplyWorkingToOriginal();
@@ -689,7 +685,7 @@ bool FUTKEditorApp::OnRequestClose(EAssetEditorCloseReason InCloseReason)
 	case EAppReturnType::Yes:
 		bIsClosing = true;
 		bSuppressChangeNotifications = true;
-		ApplyWorkingToOriginal();
+		SaveAsset_Execute();
 		return true;
 
 	case EAppReturnType::No:
