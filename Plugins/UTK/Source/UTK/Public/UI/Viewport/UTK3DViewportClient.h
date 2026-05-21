@@ -50,6 +50,9 @@ private:
 	void SetupPreviewScene();
 	AUTKTerrainPreviewActor* EnsureTerrainPreviewActor();
 
+	bool GetPreviewTerrainBounds(FBoxSphereBounds& OutBounds) const;
+	void FrameBounds(const FBoxSphereBounds& Bounds);
+
 	TWeakPtr<FUTKEditorApp> EditorApp;
 
 	UStaticMeshComponent* FloorComponent = nullptr;

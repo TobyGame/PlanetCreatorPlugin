@@ -56,6 +56,13 @@ FLinearColor FUTK3DViewportClient::GetBackgroundColor() const
 
 void FUTK3DViewportClient::FramePreview()
 {
+	FBoxSphereBounds PreviewBounds;
+	if (GetPreviewTerrainBounds(PreviewBounds))
+	{
+		FrameBounds(PreviewBounds);
+		return;
+	}
+
 	ApplyDefaultView();
 }
 
@@ -85,6 +92,50 @@ void FUTK3DViewportClient::ApplyDefaultView()
 	SetViewRotation(FRotator(-28.0f, 45.0f, 0.0f));
 
 	SetLookAtLocation(FVector::ZeroVector);
+
+	Invalidate();
+}
+
+bool FUTK3DViewportClient::GetPreviewTerrainBounds(FBoxSphereBounds& OutBounds) const
+{
+	if (!TerrainPreviewActor.IsValid())
+		return false;
+
+	const UUTKTerrainPreviewComponent* PreviewComponent = TerrainPreviewActor->GetPreviewComponent();
+
+	if (!PreviewComponent || !PreviewComponent->HasValidPreview())
+		return false;
+
+	const FBoxSphereBounds Bounds = PreviewComponent->GetPreviewBounds();
+
+	if (Bounds.SphereRadius <= KINDA_SMALL_NUMBER)
+		return false;
+
+	if (!Bounds.Origin.ContainsNaN() && !Bounds.BoxExtent.ContainsNaN())
+	{
+		OutBounds = Bounds;
+		return true;
+	}
+
+	return false;
+}
+
+void FUTK3DViewportClient::FrameBounds(const FBoxSphereBounds& Bounds)
+{
+	const FVector SafeExtent(
+		FMath::Max(Bounds.BoxExtent.X, 1.0),
+		FMath::Max(Bounds.BoxExtent.Y, 1.0),
+		FMath::Max(Bounds.BoxExtent.Z, 1.0));
+
+	FBox FocusBox(
+		Bounds.Origin - SafeExtent,
+		Bounds.Origin + SafeExtent);
+
+	const double Padding = FMath::Max(5.0, Bounds.SphereRadius * 0.10);
+	FocusBox = FocusBox.ExpandBy(Padding);
+
+	FocusViewportOnBox(FocusBox, true);
+	SetLookAtLocation(Bounds.Origin);
 
 	Invalidate();
 }
