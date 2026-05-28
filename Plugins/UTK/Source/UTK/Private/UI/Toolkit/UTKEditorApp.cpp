@@ -296,7 +296,18 @@ FUTKPreviewTerrainMapping FUTKEditorApp::MakePreviewTerrainMapping() const
 
 	FUTKPreviewTerrainMapping Mapping = FUTKPreviewTerrainMapping::Make(Resolution, WidthMeters, MaxHeightMeters);
 
-	Mapping.PreferredBackend = Asset ? Asset->PreviewBackend : EUTKPreviewBackend::DynamicMesh;
+	if (Asset)
+	{
+		Mapping.PreferredBackend = Asset->PreviewBackend;
+		Mapping.NanitePreviewMesh = Asset->PreviewNaniteMesh.LoadSynchronous();
+		Mapping.NaniteDisplacementMaterial = Asset->PreviewNaniteDisplacementMaterial.LoadSynchronous();
+	}
+	else
+	{
+		Mapping.PreferredBackend = EUTKPreviewBackend::DynamicMesh;
+		Mapping.NanitePreviewMesh = nullptr;
+		Mapping.NaniteDisplacementMaterial = nullptr;
+	}
 
 	return Mapping;
 }
@@ -546,6 +557,8 @@ void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FProp
 			if (PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewResolution) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewSeed) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewBackend) ||
+				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewNaniteMesh) ||
+				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewNaniteDisplacementMaterial) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewWidthMeters) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewMaxHeightMeters))
 			{

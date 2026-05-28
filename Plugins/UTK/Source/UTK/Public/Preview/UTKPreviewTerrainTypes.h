@@ -4,13 +4,16 @@
 
 #include "UTKPreviewTerrainTypes.generated.h"
 
+class UMaterialInterface;
+class UStaticMesh;
+
 UENUM(BlueprintType)
 enum class EUTKPreviewBackend : uint8
 {
 	None UMETA(DisplayName="None"),
 	DynamicMesh UMETA(DisplayName="Dynamic Mesh"),
-	HeightTexture UMETA(DisplayName="Height Texture"),
-	ChunkedHeightTexture UMETA(DisplayName="Chunked Height Texture"),
+	HeightTexture UMETA(DisplayName="Nanite Height Texture"),
+	ChunkedHeightTexture UMETA(DisplayName="Chunked Nanite Height Texture"),
 };
 
 struct FUTKPreviewTerrainMapping
@@ -28,6 +31,9 @@ struct FUTKPreviewTerrainMapping
 	float PreviewFootprintUU = 100.0f;
 
 	EUTKPreviewBackend PreferredBackend = EUTKPreviewBackend::DynamicMesh;
+
+	TWeakObjectPtr<UStaticMesh> NanitePreviewMesh;
+	TWeakObjectPtr<UMaterialInterface> NaniteDisplacementMaterial;
 
 	static FUTKPreviewTerrainMapping Make(
 		int32 InResolution,
@@ -62,5 +68,19 @@ struct FUTKPreviewTerrainMapping
 			(V - 0.5f) * PreviewFootprintUU,
 			Height01 * PreviewFootprintUU * HeightScaleRatio
 		);
+	}
+
+	FVector ToFlatPreviewPosition(float U, float V) const
+	{
+		return FVector(
+			(U - 0.5f) * PreviewFootprintUU,
+			(V - 0.5f) * PreviewFootprintUU,
+			0.0f
+		);
+	}
+
+	float GetPreviewHeightScaleUU() const
+	{
+		return PreviewFootprintUU * HeightScaleRatio;
 	}
 };
