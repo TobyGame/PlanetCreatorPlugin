@@ -2,6 +2,8 @@
 
 #include "Components/DynamicMeshComponent.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Core/UTKLogger.h"
 #include "Core/UTKTerrainTypes.h"
 #include "DynamicMesh/DynamicMesh3.h"
 #include "DynamicMesh/MeshNormals.h"
@@ -17,6 +19,7 @@ namespace
 {
 	constexpr int32 UTKPreviewMinDynamicMeshResolution = 2;
 	constexpr int32 UTKPreviewMaxDynamicMeshResolution = 4096;
+	constexpr int32 UTKFlatNaniteHeightTextureResolution = 2;
 
 	const FName UTKHeightTextureParameterName(TEXT("UTK_HeightTexture"));
 
@@ -26,19 +29,19 @@ namespace
 		UStaticMesh* PreviewMesh = Mapping.NanitePreviewMesh.Get();
 		if (!PreviewMesh)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[UTK] Nanite Height Texture backend requested, but no Nanite preview mesh is assigned."));
+			UE_LOG(LogUTKEditor, Warning, TEXT("[UTK] Nanite Height Texture backend requested, but no Nanite preview mesh is assigned."));
 			return false;
 		}
 
 		if (!Mapping.NaniteDisplacementMaterial.IsValid())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[UTK] Nanite Height Texture backend requested, but no Nanite displacement material is assigned."));
+			UE_LOG(LogUTKEditor, Warning, TEXT("[UTK] Nanite Height Texture backend requested, but no Nanite displacement material is assigned."));
 			return false;
 		}
 
 		if (!PreviewMesh->NaniteSettings.bEnabled)
 		{
-			UE_LOG(LogTemp,
+			UE_LOG(LogUTKEditor,
 				Warning,
 				TEXT("[UTK] Nanite Height Texture backend requested, but preview mesh '%s' does not have Nanite enabled. Falling back to DynamicMesh."),
 				*PreviewMesh->GetName());
@@ -454,6 +457,7 @@ bool UUTKTerrainPreviewComponent::UpdateDynamicMeshBackend(const FUTKTerrain& Te
 		return false;
 
 	RenderComponent->SetMesh(MoveTemp(Mesh));
+	RenderComponent->SetMaterial(0, UMaterial::GetDefaultMaterial(MD_Surface));
 	RenderComponent->SetVisibility(true, true);
 
 	ActiveRenderComponent = RenderComponent;
@@ -583,7 +587,7 @@ bool UUTKTerrainPreviewComponent::UpdateHeightTextureFromLayer(const FUTKLayer& 
 
 bool UUTKTerrainPreviewComponent::UpdateFlatHeightTexture(const FUTKPreviewTerrainMapping& Mapping)
 {
-	const int32 Resolution = FMath::Clamp(Mapping.Resolution > 0 ? Mapping.Resolution : 512, 2, 4096);
+	constexpr int32 Resolution = UTKFlatNaniteHeightTextureResolution;
 
 	UTexture2D* Texture = CreateOrResizeHeightTexture(Resolution, Resolution);
 	if (!Texture)
@@ -686,10 +690,20 @@ bool UUTKTerrainPreviewComponent::ApplyNaniteDisplacementMaterial(const FUTKPrev
 
 	if (bMaterialInstanceChanged)
 	{
-		//NanitePreviewMaterialInstance->PostEditChange();
 		NanitePreviewMaterialInstance->UpdateCachedData();
 		NanitePreviewMaterialInstance->RecacheUniformExpressions(true);
 	}
+
+	UE_LOG(
+		LogUTKEditor,
+		Verbose,
+		TEXT("[UTK] Applied Nanite Height Texture material. Texture=%dx%d MagnitudeUU=%.3f Center=0.0 WidthMeters=%.3f MaxHeightMeters=%.3f Ratio=%.3f"),
+		HeightTextureWidth,
+		HeightTextureHeight,
+		MagnitudeUU,
+		Mapping.WidthMeters,
+		Mapping.MaxHeightMeters,
+		Mapping.HeightScaleRatio);
 
 	NaniteStaticMeshComponent->SetMaterial(0, NanitePreviewMaterialInstance);
 	ApplyNaniteBoundsScale(MagnitudeUU);
@@ -717,6 +731,7 @@ UTexture2D* UUTKTerrainPreviewComponent::CreateOrResizeHeightTexture(int32 Width
 
 	HeightTexture->SRGB = false;
 	HeightTexture->NeverStream = true;
+	HeightTexture->MipGenSettings = TMGS_NoMipmaps;
 	HeightTexture->Filter = TF_Bilinear;
 	HeightTexture->AddressX = TA_Clamp;
 	HeightTexture->AddressY = TA_Clamp;

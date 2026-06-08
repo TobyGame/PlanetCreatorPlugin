@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "Components/SceneComponent.h"
-#include "Core/UTKTerrainTypes.h"
 #include "Preview/UTKPreviewTerrainTypes.h"
 
 #include "UTKTerrainPreviewComponent.generated.h"
@@ -10,10 +9,12 @@
 class UDynamicMeshComponent;
 class UMaterialInstanceConstant;
 class UMaterialInterface;
+class UStaticMesh;
 class UStaticMeshComponent;
 class UTexture2D;
 
 struct FUTKTerrain;
+struct FUTKLayer;
 
 UCLASS(ClassGroup=(UTK), meta=(BlueprintSpawnableComponent))
 class UTK_API UUTKTerrainPreviewComponent : public USceneComponent
