@@ -2,8 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
-#include "Engine/StaticMesh.h"
-#include "Materials/MaterialInterface.h"
 #include "Preview/UTKPreviewTerrainTypes.h"
 
 #include "UTKAsset.generated.h"
@@ -43,40 +41,12 @@ public:
 	/**
 	 * Preferred viewport preview backend.
 	 *
-	 * Dynamic Mesh is the CPU/debug backend.
-	 * Nanite Height Texture is the preferred high-resolution preview backend.
+	 * Dynamic Mesh is kept as a CPU/debug backend.
+	 * Nanite Height Texture uses UTK's built-in plugin preview mesh and material.
 	 * Chunked Nanite Height Texture is reserved for future large-region preview.
 	 */
 	UPROPERTY(EditAnywhere, Category="Preview|Rendering", meta=(DisplayName="Preview Backend"))
 	EUTKPreviewBackend PreviewBackend = EUTKPreviewBackend::DynamicMesh;
-
-	/**
-	 * Static mesh used by the Nanite Height Texture preview backend.
-	 *
-	 * This should be a Nanite-enabled plane/grid mesh with UVs in the 0..1 range.
-	 * The backend keeps this mesh stable and updates a height texture instead of
-	 * rebuilding terrain geometry.
-	 */
-	UPROPERTY(EditAnywhere, Category="Preview|Rendering", meta=(DisplayName="Nanite Preview Mesh"))
-	TSoftObjectPtr<UStaticMesh> PreviewNaniteMesh;
-
-	/**
-	 * Material used by the Nanite Height Texture preview backend.
-	 *
-	 * Required material setup:
-	 *
-	 * Texture2D parameter:
-	 *     UTK_HeightTexture
-	 *
-	 * Required graph:
-	 *     UTK_HeightTexture.R -> Displacement
-	 *
-	 * The backend creates a transient material instance and automatically sets:
-	 *     Displacement Magnitude = PreviewFootprintUU * HeightScaleRatio
-	 *     Displacement Center    = 0.0
-	 */
-	UPROPERTY(EditAnywhere, Category="Preview|Rendering", meta=(DisplayName="Nanite Displacement Material"))
-	TSoftObjectPtr<UMaterialInterface> PreviewNaniteDisplacementMaterial;
 
 	/**
 	 * Conceptual terrain width in meters.

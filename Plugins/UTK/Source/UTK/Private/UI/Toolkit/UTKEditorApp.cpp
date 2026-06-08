@@ -2,6 +2,7 @@
 #include "UI/Toolkit/UTKEditorMode.h"
 #include "Modules/ModuleManager.h"
 #include "Assets/UTKAsset.h"
+#include "Core/UTKLogger.h"
 #include "Framework/Commands/GenericCommands.h"
 #include "Graph/UTKGraph.h"
 #include "Graph/UTKGraphSchema.h"
@@ -9,10 +10,66 @@
 #include "Graph/Nodes/UTKNode.h"
 #include "Graph/UTKGraphEvaluation.h"
 #include "UI/Graph/UTKGraphCommands.h"
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInterface.h"
+#include "UObject/SoftObjectPtr.h"
 
 #define LOCTEXT_NAMESPACE "UTKEditor"
 
 TWeakPtr<FUTKEditorApp> FUTKEditorApp::LastInstance;
+
+namespace
+{
+	constexpr TCHAR UTKDefaultNanitePreviewMeshPath[] =
+		TEXT("/UTK/UTK_DefaultPlane.UTK_DefaultPlane");
+
+	constexpr TCHAR UTKDefaultNaniteDisplacementMaterialPath[] =
+		TEXT("/UTK/MI_UTK_NaniteHeightPreview.MI_UTK_NaniteHeightPreview");
+
+	UStaticMesh* GetDefaultNanitePreviewMesh()
+	{
+		static TWeakObjectPtr<UStaticMesh> CachedMesh;
+
+		if (!CachedMesh.IsValid())
+		{
+			const TSoftObjectPtr<UStaticMesh> MeshPtr{ FSoftObjectPath(UTKDefaultNanitePreviewMeshPath) };
+			CachedMesh = MeshPtr.LoadSynchronous();
+
+			if (!CachedMesh.IsValid())
+			{
+				UE_LOG(
+					LogUTKEditor,
+					Warning,
+					TEXT("[UTK] Failed to load default Nanite preview mesh: %s"),
+					UTKDefaultNanitePreviewMeshPath);
+			}
+		}
+
+		return CachedMesh.Get();
+	}
+
+	UMaterialInterface* GetDefaultNaniteDisplacementMaterial()
+	{
+		static TWeakObjectPtr<UMaterialInterface> CachedMaterial;
+
+		if (!CachedMaterial.IsValid())
+		{
+			const TSoftObjectPtr<UMaterialInterface> MaterialPtr{ FSoftObjectPath(UTKDefaultNaniteDisplacementMaterialPath) };
+			CachedMaterial = MaterialPtr.LoadSynchronous();
+
+			if (!CachedMaterial.IsValid())
+			{
+				UE_LOG(
+					LogUTKEditor,
+					Warning,
+					TEXT("[UTK] Failed to load default Nanite displacement material: %s"),
+					UTKDefaultNaniteDisplacementMaterialPath);
+			}
+		}
+
+		return CachedMaterial.Get();
+	}
+}
 
 void FUTKEditorApp::InitUTKEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UObject* UTKAsset)
 {
@@ -296,18 +353,10 @@ FUTKPreviewTerrainMapping FUTKEditorApp::MakePreviewTerrainMapping() const
 
 	FUTKPreviewTerrainMapping Mapping = FUTKPreviewTerrainMapping::Make(Resolution, WidthMeters, MaxHeightMeters);
 
-	if (Asset)
-	{
-		Mapping.PreferredBackend = Asset->PreviewBackend;
-		Mapping.NanitePreviewMesh = Asset->PreviewNaniteMesh.LoadSynchronous();
-		Mapping.NaniteDisplacementMaterial = Asset->PreviewNaniteDisplacementMaterial.LoadSynchronous();
-	}
-	else
-	{
-		Mapping.PreferredBackend = EUTKPreviewBackend::DynamicMesh;
-		Mapping.NanitePreviewMesh = nullptr;
-		Mapping.NaniteDisplacementMaterial = nullptr;
-	}
+	Mapping.PreferredBackend = Asset ? Asset->PreviewBackend : EUTKPreviewBackend::DynamicMesh;
+
+	Mapping.NanitePreviewMesh = GetDefaultNanitePreviewMesh();
+	Mapping.NaniteDisplacementMaterial = GetDefaultNaniteDisplacementMaterial();
 
 	return Mapping;
 }
@@ -557,8 +606,6 @@ void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FProp
 			if (PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewResolution) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewSeed) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewBackend) ||
-				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewNaniteMesh) ||
-				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewNaniteDisplacementMaterial) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewWidthMeters) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewMaxHeightMeters))
 			{
