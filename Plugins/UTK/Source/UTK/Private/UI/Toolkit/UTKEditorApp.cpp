@@ -358,6 +358,14 @@ FUTKPreviewTerrainMapping FUTKEditorApp::MakePreviewTerrainMapping() const
 	Mapping.NanitePreviewMesh = GetDefaultNanitePreviewMesh();
 	Mapping.NaniteDisplacementMaterial = GetDefaultNaniteDisplacementMaterial();
 
+	if (Asset)
+	{
+		Mapping.bUseGpuHeightTest = Asset->bPreviewUseGpuHeightTets;
+		Mapping.GpuHeightTestFrequency = Asset->PreviewGpuHeightTestFrequency;
+		Mapping.GpuHeightTestRadius = Asset->PreviewGpuHeightTestRadius;
+		Mapping.GpuHeightTestPhase = Asset->PreviewGpuHeightTestPhase;
+	}
+
 	return Mapping;
 }
 
@@ -606,6 +614,10 @@ void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FProp
 			if (PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewResolution) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewSeed) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewBackend) ||
+				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, bPreviewUseGpuHeightTets) ||
+				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewGpuHeightTestFrequency) ||
+				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewGpuHeightTestRadius) ||
+				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewGpuHeightTestPhase) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewWidthMeters) ||
 				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewMaxHeightMeters))
 			{

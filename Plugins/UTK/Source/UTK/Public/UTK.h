@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "tiff.h"
 #include "Modules/ModuleManager.h"
 
 class IAssetTools;
@@ -16,5 +15,14 @@ public:
 	virtual void ShutdownModule() override;
 
 private:
+	void RegisterShaderDirectory();
+	void RegisterEditorIntegrations();
+	void UnregisterEditorIntegrations();
+
+private:
+	bool bEditorIntegrationsRegistered = false;
+
+	FDelegateHandle PostEngineInitHandle;
+
 	TArray<TSharedPtr<IAssetTypeActions>> RegisteredAssetTypeActions;
 };

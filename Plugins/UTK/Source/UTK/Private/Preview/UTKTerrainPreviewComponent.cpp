@@ -3,12 +3,14 @@
 #include "Components/DynamicMeshComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Compute/UTKGpuHeightTextureTest.h"
 #include "Core/UTKLogger.h"
 #include "Core/UTKTerrainTypes.h"
 #include "DynamicMesh/DynamicMesh3.h"
 #include "DynamicMesh/MeshNormals.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture2D.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "GameFramework/Actor.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceConstant.h"
@@ -265,6 +267,8 @@ void UUTKTerrainPreviewComponent::ClearPreview()
 	NanitePreviewMaterialInstance = nullptr;
 	NaniteDisplacementParentMaterial = nullptr;
 	LastAppliedHeightTexture = nullptr;
+	ActiveHeightTexture = nullptr;
+	GpuHeightTestRenderTarget = nullptr;
 	CurrentNanitePreviewMesh = nullptr;
 
 	HeightTextureHeight = 0;
@@ -490,8 +494,16 @@ bool UUTKTerrainPreviewComponent::UpdateNaniteHeightTextureBackend(const FUTKTer
 	if (!UpdateNanitePreviewMesh(Mapping))
 		return false;
 
-	if (!UpdateHeightTextureFromLayer(*Layer, Mapping))
-		return false;
+	if (Mapping.bUseGpuHeightTest)
+	{
+		if (!UpdateGpuHeightTextureTest(Mapping))
+			return false;
+	}
+	else
+	{
+		if (!UpdateHeightTextureFromLayer(*Layer, Mapping))
+			return false;
+	}
 
 	if (!ApplyNaniteDisplacementMaterial(Mapping))
 		return false;
@@ -509,8 +521,16 @@ bool UUTKTerrainPreviewComponent::UpdateFlatNaniteHeightTextureBackend(const FUT
 	if (!UpdateNanitePreviewMesh(Mapping))
 		return false;
 
-	if (!UpdateFlatHeightTexture(Mapping))
-		return false;
+	if (Mapping.bUseGpuHeightTest)
+	{
+		if (!UpdateGpuHeightTextureTest(Mapping))
+			return false;
+	}
+	else
+	{
+		if (!UpdateFlatHeightTexture(Mapping))
+			return false;
+	}
 
 	if (!ApplyNaniteDisplacementMaterial(Mapping))
 		return false;
@@ -582,6 +602,9 @@ bool UUTKTerrainPreviewComponent::UpdateHeightTextureFromLayer(const FUTKLayer& 
 			delete Regions;
 		});
 
+	ActiveHeightTexture = Texture;
+	LastAppliedHeightTexture = nullptr;
+
 	return true;
 }
 
@@ -612,6 +635,38 @@ bool UUTKTerrainPreviewComponent::UpdateFlatHeightTexture(const FUTKPreviewTerra
 			delete Regions;
 		});
 
+	ActiveHeightTexture = Texture;
+	LastAppliedHeightTexture = nullptr;
+
+	return true;
+}
+
+bool UUTKTerrainPreviewComponent::UpdateGpuHeightTextureTest(const FUTKPreviewTerrainMapping& Mapping)
+{
+	const int32 Resolution = FMath::Clamp(
+		Mapping.Resolution > 0 ? Mapping.Resolution : 512,
+		2,
+		4096);
+
+	GpuHeightTestRenderTarget = FUTKGpuHeightTextureTest::CreateOrResizeRenderTarget(this, GpuHeightTestRenderTarget, Resolution);
+
+	if (!GpuHeightTestRenderTarget)
+		return false;
+
+	FUTKGpuHeightTextureTestSettings Settings;
+	Settings.Resolution = Resolution;
+	Settings.Frequency = Mapping.GpuHeightTestFrequency;
+	Settings.Radius = Mapping.GpuHeightTestRadius;
+	Settings.Phase = Mapping.GpuHeightTestPhase;
+
+	FUTKGpuHeightTextureTest::Dispatch(GpuHeightTestRenderTarget, Settings);
+
+	ActiveHeightTexture = GpuHeightTestRenderTarget;
+	LastAppliedHeightTexture = nullptr;
+
+	HeightTextureWidth = Resolution;
+	HeightTextureHeight = Resolution;
+
 	return true;
 }
 
@@ -635,7 +690,7 @@ void UUTKTerrainPreviewComponent::ApplyNaniteBoundsScale(float MagnitudeUU)
 bool UUTKTerrainPreviewComponent::ApplyNaniteDisplacementMaterial(const FUTKPreviewTerrainMapping& Mapping)
 {
 #if WITH_EDITOR
-	if (!NaniteStaticMeshComponent || !HeightTexture)
+	if (!NaniteStaticMeshComponent || !ActiveHeightTexture)
 		return false;
 
 	UMaterialInterface* ParentMaterial = Mapping.NaniteDisplacementMaterial.Get();
@@ -668,13 +723,13 @@ bool UUTKTerrainPreviewComponent::ApplyNaniteDisplacementMaterial(const FUTKPrev
 
 	bool bMaterialInstanceChanged = bParentChanged;
 
-	if (LastAppliedHeightTexture != HeightTexture)
+	if (LastAppliedHeightTexture != ActiveHeightTexture)
 	{
 		NanitePreviewMaterialInstance->SetTextureParameterValueEditorOnly(
 			FMaterialParameterInfo(UTKHeightTextureParameterName),
-			HeightTexture);
+			ActiveHeightTexture);
 
-		LastAppliedHeightTexture = HeightTexture;
+		LastAppliedHeightTexture = ActiveHeightTexture;
 		bMaterialInstanceChanged = true;
 	}
 
@@ -740,6 +795,7 @@ UTexture2D* UUTKTerrainPreviewComponent::CreateOrResizeHeightTexture(int32 Width
 	HeightTextureWidth = Width;
 	HeightTextureHeight = Height;
 
+	ActiveHeightTexture = HeightTexture;
 	LastAppliedHeightTexture = nullptr;
 
 	return HeightTexture;

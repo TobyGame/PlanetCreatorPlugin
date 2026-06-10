@@ -11,9 +11,13 @@ public class UTK : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core", "CoreUObject", "Engine",
-				"Slate", "SlateCore",
-				"InputCore", "ApplicationCore"
+				"Core", 
+				"CoreUObject", 
+				"Engine",
+				"Slate", 
+				"SlateCore",
+				"InputCore", 
+				"ApplicationCore",
 			}
 			);
 			
@@ -30,6 +34,8 @@ public class UTK : ModuleRules
 				"AssetTools",
 				"Projects",
 				"RenderCore",
+				"RHI",
+				"Renderer",
 				"GeometryCore",
 				"GeometryFramework",
 			}

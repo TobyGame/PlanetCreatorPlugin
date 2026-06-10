@@ -35,6 +35,12 @@ struct FUTKPreviewTerrainMapping
 	TWeakObjectPtr<UStaticMesh> NanitePreviewMesh;
 	TWeakObjectPtr<UMaterialInterface> NaniteDisplacementMaterial;
 
+	bool bUseGpuHeightTest = false;
+
+	float GpuHeightTestFrequency = 8.0f;
+	float GpuHeightTestRadius = 1.0f;
+	float GpuHeightTestPhase = 0.0f;
+
 	static FUTKPreviewTerrainMapping Make(
 		int32 InResolution,
 		float InWidthMeters,

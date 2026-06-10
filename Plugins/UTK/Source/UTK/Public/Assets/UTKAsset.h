@@ -49,6 +49,24 @@ public:
 	EUTKPreviewBackend PreviewBackend = EUTKPreviewBackend::DynamicMesh;
 
 	/**
+	 * Debug switch for testing GPU heightfield generation.
+	 * 
+	 * When enabled, Nanite Height Texture mode receives a GPU-generated render target
+	 * instead of a CPU-uploaded height texture.
+	 */
+	UPROPERTY(EditAnywhere, Category="Preview|GPU Test", meta=(DisplayName="Enable GPU Height Test"))
+	bool bPreviewUseGpuHeightTets = false;
+
+	UPROPERTY(EditAnywhere, Category="Preview|GPU Test", meta=(ClampMin="0.1", UIMin="0.1", DisplayName="GPU Test Frequency"))
+	float PreviewGpuHeightTestFrequency = 8.0f;
+
+	UPROPERTY(EditAnywhere, Category="Preview|GPU Test", meta=(ClampMin="0.1", UIMin="0.1", UIMax="2.0", DisplayName="GPU Test Radius"))
+	float PreviewGpuHeightTestRadius = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category="Preview|GPU Test", meta=(DisplayName="GPU Test Phase"))
+	float PreviewGpuHeightTestPhase = 0.0f;
+
+	/**
 	 * Conceptual terrain width in meters.
 	 * 
 	 * This does not directly resize the 3D viewport footprint.

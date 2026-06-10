@@ -12,6 +12,7 @@ class UMaterialInterface;
 class UStaticMesh;
 class UStaticMeshComponent;
 class UTexture2D;
+class UTextureRenderTarget2D;
 
 struct FUTKTerrain;
 struct FUTKLayer;
@@ -54,6 +55,7 @@ private:
 	bool UpdateNanitePreviewMesh(const FUTKPreviewTerrainMapping& Mapping);
 	bool UpdateHeightTextureFromLayer(const FUTKLayer& Layer, const FUTKPreviewTerrainMapping& Mapping);
 	bool UpdateFlatHeightTexture(const FUTKPreviewTerrainMapping& Mapping);
+	bool UpdateGpuHeightTextureTest(const FUTKPreviewTerrainMapping& Mapping);
 	bool ApplyNaniteDisplacementMaterial(const FUTKPreviewTerrainMapping& Mapping);
 	void ApplyNaniteBoundsScale(float MagnitudeUU);
 
@@ -92,7 +94,13 @@ private:
 	TObjectPtr<UMaterialInterface> NaniteDisplacementParentMaterial = nullptr;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTexture2D> LastAppliedHeightTexture = nullptr;
+	TObjectPtr<UTexture> ActiveHeightTexture = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTexture> LastAppliedHeightTexture = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextureRenderTarget2D> GpuHeightTestRenderTarget = nullptr;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> CurrentNanitePreviewMesh = nullptr;
