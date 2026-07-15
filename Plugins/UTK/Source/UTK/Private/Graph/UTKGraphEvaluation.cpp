@@ -1,5 +1,8 @@
 ﻿#include "Graph/UTKGraphEvaluation.h"
+
 #include "Graph/Nodes/UTKNode.h"
+#include "Graph/Operators/UTKOperatorRegistry.h"
+#include "Misc/ScopeExit.h"
 
 
 bool ResolveInputsForNode(const UUTKNode* Node, TArray<FUTKResolvedInput>& OutInputs)
@@ -10,13 +13,12 @@ bool ResolveInputsForNode(const UUTKNode* Node, TArray<FUTKResolvedInput>& OutIn
 		return false;
 
 	const FUTKNodeDefinition& Definition = Node->GetDefinition();
-	const TArray<FUTKNodePinDefinition>& PinDefs = Definition.Pins;
 
 	bool bAllRequiredSatisfied = true;
 
 	// We iterate over the logical pin definitions, not raw UEdGraph pins, so that
 	// the input ordering is stable and controlled by the node definition.
-	for (const FUTKNodePinDefinition& PinDef : PinDefs)
+	for (const FUTKNodePinDefinition& PinDef : Definition.Pins)
 	{
 		if (!PinDef.bInput)
 			continue;
@@ -34,24 +36,13 @@ bool ResolveInputsForNode(const UUTKNode* Node, TArray<FUTKResolvedInput>& OutIn
 			{
 				if (UEdGraphPin* const LinkedPin = InputGraphPin->LinkedTo[0])
 				{
-					if (UEdGraphNode* const OwingNode = LinkedPin->GetOwningNode())
+					if (UUTKNode* const UpstreamNode = Cast<UUTKNode>(LinkedPin->GetOwningNode()))
 					{
-						if (UUTKNode* const UpstreamNode = Cast<UUTKNode>(OwingNode))
-						{
-							Resolved.UpstreamNode = UpstreamNode;
-							Resolved.UpstreamOutputPinName = LinkedPin->PinName;
+						Resolved.UpstreamNode = UpstreamNode;
+						Resolved.UpstreamOutputPinName = LinkedPin->PinName;
 
-							const FUTKNodeDefinition& UpstreamDef = UpstreamNode->GetDefinition();
-							for (const FUTKNodePinDefinition& UpPinDef : UpstreamDef.Pins)
-							{
-								if (!UpPinDef.bInput && UpPinDef.Name == Resolved.UpstreamOutputPinName)
-								{
-									if (!UpPinDef.DefaultLayerName.IsNone())
-										Resolved.DefaultLayerName = UpPinDef.DefaultLayerName;
-									break;
-								}
-							}
-						}
+						if (const FUTKNodePinDefinition* UpstreamPin = UpstreamNode->FindPinDefinition(LinkedPin->PinName, EGPD_Output))
+							Resolved.DefaultLayerName = UpstreamPin->DefaultLayerName;
 					}
 				}
 			}
@@ -68,7 +59,21 @@ bool ResolveInputsForNode(const UUTKNode* Node, TArray<FUTKResolvedInput>& OutIn
 
 namespace
 {
-	TSharedPtr<FUTKTerrain> EvaluateNodeOutput_Internal(UUTKNode* Node, FName OutputPinName, FUTKNodeExecutionContext& Ctx, TSet<FGuid>& EvaluationStack)
+	void FillCacheEntry(UUTKNode& Node, FName OutputPinName, const TSharedPtr<FUTKTerrain>& Terrain, const FUTKNodeExecutionContext& Context)
+	{
+		if (!Terrain.IsValid() || !Terrain->IsValid())
+			return;
+
+		FUTKNodeCacheEntry& CacheEntry = Node.GetOrAddCacheEntry(OutputPinName);
+
+		CacheEntry.Terrain = Terrain;
+		CacheEntry.CachedResolutionX = Context.ResolutionX;
+		CacheEntry.CachedResolutionY = Context.ResolutionY;
+		CacheEntry.CachedGraphRevision = Context.GraphRevision;
+		CacheEntry.CachedPreviewRevision = Context.PreviewRevision;
+	}
+
+	TSharedPtr<FUTKTerrain> EvaluateNodeOutput_Internal(UUTKNode* Node, FName OutputPinName, FUTKNodeExecutionContext& Context, TSet<FGuid>& EvaluationStack)
 	{
 		if (!Node)
 			return nullptr;
@@ -84,16 +89,14 @@ namespace
 		}
 
 		EvaluationStack.Add(Node->NodeGuid);
-		auto PopFromStack = [&EvaluationStack, Node](){
-			EvaluationStack.Remove(Node->NodeGuid);
-		};
+
 		ON_SCOPE_EXIT{
-			PopFromStack();
+			EvaluationStack.Remove(Node->NodeGuid);
 		};
 
 		if (FUTKNodeCacheEntry* Cache = Node->FindCacheEntry(OutputPinName))
 		{
-			if (Cache->IsValidFor(Ctx) && Cache->Terrain.IsValid())
+			if (Cache->IsValidFor(Context))
 			{
 				Diagnostics.SetMessage(TEXT("Cached"), false);
 				return Cache->Terrain;
@@ -102,8 +105,30 @@ namespace
 
 		const FUTKNodeDefinition& Definition = Node->GetDefinition();
 
+		const FUTKOperatorDefinition* Operator = FUTKOperatorRegistry::Get().FindOperator(Definition.OperatorId);
+
+		if (!Operator)
+		{
+			Diagnostics.SetMessage(TEXT("Node operator is not registered."), true);
+
+			return nullptr;
+		}
+
+		if (!Operator->ReferenceEvaluator)
+		{
+			Diagnostics.SetMessage(TEXT("No temporary reference evaluator is registered."), true);
+
+			return nullptr;
+		}
+
 		TArray<FUTKResolvedInput> ResolvedInputs;
-		const bool bAllRequiredInputsSatisfied = ResolveInputsForNode(Node, ResolvedInputs);
+
+		if (!ResolveInputsForNode(Node, ResolvedInputs))
+		{
+			Diagnostics.SetMessage(TEXT("Missing required input(s)."), true);
+
+			return nullptr;
+		}
 
 		TArray<FUTKNodeInput> Inputs;
 		Inputs.Reserve(ResolvedInputs.Num());
@@ -117,11 +142,37 @@ namespace
 				UpstreamTerrain = EvaluateNodeOutput_Internal(
 					Resolved.UpstreamNode,
 					Resolved.UpstreamOutputPinName,
-					Ctx,
+					Context,
 					EvaluationStack);
+
+				if (!UpstreamTerrain)
+				{
+					Diagnostics.SetMessage(TEXT("Failed to evaluate an upstream input."), true);
+
+					return nullptr;
+				}
 			}
 
 			Inputs.Emplace(UpstreamTerrain, Resolved.DefaultLayerName);
+		}
+
+		TArray<FUTKNodeOutput> Outputs;
+		TArray<FName> OutputPinNames;
+
+		for (const FUTKNodePinDefinition& PinDef : Definition.Pins)
+		{
+			if (!PinDef.bInput)
+			{
+				Outputs.Emplace(TSharedPtr<FUTKTerrain>(), PinDef.DefaultLayerName);
+				OutputPinNames.Add(PinDef.Name);
+			}
+		}
+
+		if (Outputs.IsEmpty())
+		{
+			Diagnostics.SetMessage(TEXT("Node has no output."), true);
+
+			return nullptr;
 		}
 
 		int32 NumOutputs = 0;
@@ -131,62 +182,49 @@ namespace
 				++NumOutputs;
 		}
 
-		TArray<FUTKNodeOutput> Outputs;
-		Outputs.Reserve(NumOutputs);
+		FUTKTerrainWorkspace Workspace(FUTKDomain2D(Context.ResolutionX, Context.ResolutionY));
 
-		for (const FUTKNodePinDefinition& PinDef : Definition.Pins)
+		const FUTKOperatorReferenceEvaluationRequest Request
 		{
-			if (!PinDef.bInput)
-				Outputs.Emplace(TSharedPtr<FUTKTerrain>(), PinDef.DefaultLayerName);
-		}
-
-		FUTKDomain2D Domain(Ctx.ResolutionX, Ctx.ResolutionY);
-		FUTKTerrainWorkspace Workspace(Domain);
+			*Node,
+			Inputs,
+			Context,
+			Workspace
+		};
 
 		const double StartTime = FPlatformTime::Seconds();
 
-		if (Definition.ProcessFunction)
-			Definition.ProcessFunction(Inputs, Outputs, Ctx, Workspace, *Node);
+		FString EvaluationError;
 
-		const double EndTime = FPlatformTime::Seconds();
-		Diagnostics.LastEvaluationTime = (EndTime - StartTime) * 1000.0; // ms
+		const bool bSuccess = Operator->ReferenceEvaluator(Request, Outputs, EvaluationError);
 
-		int32 OutputIndex = INDEX_NONE;
-		int32 CurrentOutputIdx = 0;
+		Diagnostics.LastEvaluationTime = (FPlatformTime::Seconds() - StartTime) * 1000.0;
 
-		for (const FUTKNodePinDefinition& PinDef : Definition.Pins)
+		if (!bSuccess)
 		{
-			if (!PinDef.bInput)
-			{
-				if (PinDef.Name == OutputPinName)
-				{
-					OutputIndex = CurrentOutputIdx;
-					break;
-				}
-
-				++CurrentOutputIdx;
-			}
+			Diagnostics.SetMessage(EvaluationError.IsEmpty() ? TEXT("Operator evaluation failed.") : EvaluationError, true);
+			return nullptr;
 		}
 
 		TSharedPtr<FUTKTerrain> ResultTerrain;
 
-		if (Outputs.IsValidIndex(OutputIndex))
-			ResultTerrain = Outputs[OutputIndex].Terrain;
+		for (int32 OutputIndex = 0; OutputIndex < Outputs.Num(); ++OutputIndex)
+		{
+			const TSharedPtr<FUTKTerrain>& OutputTerrain = Outputs[OutputIndex].Terrain;
 
-		FUTKNodeCacheEntry& CacheEntry = Node->GetOrAddCacheEntry(OutputPinName);
-		CacheEntry.Terrain = ResultTerrain;
-		CacheEntry.CachedResolutionX = Ctx.ResolutionX;
-		CacheEntry.CachedResolutionY = Ctx.ResolutionY;
-		CacheEntry.CachedGraphRevision = Ctx.GraphRevision;
-		CacheEntry.CachedPreviewRevision = Ctx.PreviewRevision;
+			FillCacheEntry(*Node, OutputPinNames[OutputIndex], OutputTerrain, Context);
+
+			if (OutputPinNames[OutputIndex] == OutputPinName)
+				ResultTerrain = OutputTerrain;
+		}
 
 		if (!ResultTerrain.IsValid() || !ResultTerrain->IsValid())
-			Diagnostics.SetMessage(TEXT("No output terrain."), true);
-		else if (!bAllRequiredInputsSatisfied)
-			Diagnostics.SetMessage(TEXT("Missing required input(s)."), true);
-		else
-			Diagnostics.SetMessage(TEXT("OK"), false);
+		{
+			Diagnostics.SetMessage(TEXT("Requested output was not produced."), true);
+			return nullptr;
+		}
 
+		Diagnostics.SetMessage(TEXT("OK"), false);
 		return ResultTerrain;
 	}
 }

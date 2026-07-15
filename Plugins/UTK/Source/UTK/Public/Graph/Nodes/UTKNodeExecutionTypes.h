@@ -116,22 +116,3 @@ struct UTK_API FUTKNodeOutput
 		return Terrain->FindLayer(DefaultLayerName);
 	}
 };
-
-
-/**
- * Standard node processing function type.
- * 
- * - Inputs:	one entry per input pin.
- * - Outputs:	one entry per output pin (the function must fill this).
- * - Ctx:		execution context (resolution, seed, etc.).
- * - Workspace: node-local scratch buffers, not exposed as outputs.
- * 
- * Node will implement this via macro-based system.
- */
-using FUTKNodeProcessFunction = TFunction<void(
-	const TArray<FUTKNodeInput>& Inputs,
-	TArray<FUTKNodeOutput>& Outputs,
-	FUTKNodeExecutionContext& Ctx,
-	FUTKTerrainWorkspace& Workspace,
-	UUTKNode& Node
-)>;

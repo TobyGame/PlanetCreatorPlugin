@@ -14,6 +14,8 @@
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
 #include "ShaderCore.h"
+#include "Graph/Operators/UTKOperatorRegistry.h"
+#include "Graph/Operators/UTKPrototypeOperators.h"
 
 #define LOCTEXT_NAMESPACE "FUTKModule"
 
@@ -35,6 +37,7 @@ void FUTKModule::ShutdownModule()
 	UnregisterEditorIntegrations();
 
 	FUTKNodeFactory::Get().Clear();
+	FUTKOperatorRegistry::Get().Clear();
 }
 
 void FUTKModule::RegisterShaderDirectory()
@@ -67,6 +70,7 @@ void FUTKModule::RegisterEditorIntegrations()
 
 	FGenericCommands::Register();
 
+	RegisterPrototypeOperators();
 	RegisterMathNodes();
 
 	bEditorIntegrationsRegistered = true;

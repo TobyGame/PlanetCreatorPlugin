@@ -29,9 +29,9 @@ struct FUTKSchemaAction_NewNode : public FEdGraphSchemaAction
 	FUTKSchemaAction_NewNode() {}
 	FUTKSchemaAction_NewNode(const FUTKNodeDefinition& InDefinition)
 		: FEdGraphSchemaAction(
-			  FText::FromString(InDefinition.Category),
-			  FText::FromString(InDefinition.Name),
-			  FText::FromString("Adds a new terrain node"),
+			  InDefinition.Category,
+			  InDefinition.DisplayName,
+			  InDefinition.Tooltip.IsEmpty() ? FText::FromString(TEXT("Add a new terrain node")) : InDefinition.Tooltip,
 			  0),
 		  NodeDef(InDefinition)
 	{}

@@ -21,9 +21,41 @@ void UUTKGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMe
 
 const FPinConnectionResponse UUTKGraphSchema::CanCreateConnection(const UEdGraphPin* A, const UEdGraphPin* B) const
 {
-	if (A->Direction == B->Direction)
+	if (!A || !B || A->Direction == B->Direction)
 	{
-		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Pins must be compatible and opposite."));
+		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Pins must have opposite directions."));
+	}
+
+	const UEdGraphPin* OutputPin = A->Direction == EGPD_Output ? A : B;
+
+	const UEdGraphPin* InputPin = A->Direction == EGPD_Input ? A : B;
+
+	const UUTKNode* OutputNode = Cast<UUTKNode>(OutputPin->GetOwningNode());
+
+	const UUTKNode* InputNode = Cast<UUTKNode>(InputPin->GetOwningNode());
+
+	if (!OutputNode || !InputNode)
+	{
+		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("UTK connections require UTK nodes."));
+	}
+
+	const FUTKNodePinDefinition* OutputDefinition = OutputNode->FindPinDefinition(OutputPin->PinName, EGPD_Output);
+
+	const FUTKNodePinDefinition* InputDefinition = InputNode->FindPinDefinition(InputPin->PinName, EGPD_Input);
+
+	if (!OutputDefinition || !InputDefinition)
+	{
+		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("UTK pin metadata is unavailable."));
+	}
+
+	const bool bTypeAreCompatible =
+		OutputDefinition->FieldType == EUTKFieldType::Any ||
+		InputDefinition->FieldType == EUTKFieldType::Any ||
+		OutputDefinition->FieldType == InputDefinition->FieldType;
+
+	if (!bTypeAreCompatible)
+	{
+		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("UTK field types are incompatible."));
 	}
 
 	return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, TEXT(""));
@@ -43,7 +75,7 @@ UEdGraphNode* FUTKSchemaAction_NewNode::PerformAction(class UEdGraph* ParentGrap
 
 	UUTKNode* NewNode = NewObject<UUTKNode>(ParentGraph, UUTKNode::StaticClass(), NAME_None, RF_Transactional);
 
-	NewNode->NodeType = FName(*NodeDef.Name);
+	NewNode->NodeType = NodeDef.TypeId;
 	NewNode->SetDefinition(NodeDef);
 	NewNode->NodePosX = Location.X;
 	NewNode->NodePosY = Location.Y;
@@ -227,6 +259,9 @@ bool UUTKGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const
 	{
 		return false;
 	}
+
+	if (CanCreateConnection(A, B).Response == CONNECT_RESPONSE_DISALLOW)
+		return false;
 
 	for (int32 i = B->LinkedTo.Num() - 1; i >= 0; --i)
 	{

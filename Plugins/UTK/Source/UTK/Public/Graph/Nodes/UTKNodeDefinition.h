@@ -1,57 +1,40 @@
 ﻿#pragma once
 
-#include "StructUtils/InstancedStruct.h"
-#include "Graph/Nodes//UTKNodeExecutionTypes.h"
+#include "CoreMinimal.h"
+#include "UTKNodeSettings.h"
+#include "Graph/UTKFieldTypes.h"
 
 
 /**
- * Pin definition used by the generic node system.
+ * Logical pin definition.
  * 
- * The extra fields (DefaultLayerName, bComputeOnlyIfConnected) are added
- * with default values, so existing DEFINE_PIN macro usage keeps compiling.
+ * DefaultLayerName is field routing metadata. It is not a hard-coded height,
+ * mask, or material convention.
  */
 struct FUTKNodePinDefinition
 {
-	/** Pin name as shown in the graph */
-	FName Name;
+	FName Name = NAME_None;
 
-	/** True if this pin is an input pin, false if it is an output pin. */
+	EUTKFieldType FieldType = EUTKFieldType::Scalar;
+
 	bool bInput = false;
-
-	/** True if this pin is required for the node to operate correctly */
 	bool bRequired = false;
 
-	/**
-	 * Default layer name to use when this pin is connected to a FUTKTerrain.
-	 * For example, "Height", "Sediment", "Flow", etc.
-	 * 
-	 * For inputs:
-	 *	- If not specified, nodes may assume "Height" or decide per-node.
-	 * For outputs:
-	 *	- Indicates which layer in the node's terrain the pin exposes.
-	 */
 	FName DefaultLayerName = NAME_None;
 
-	/**
-	 * If true (for output pins), the node is allowed to skip computing this
-	 * output when there is no downstream connection. This helps memory/perf.
-	 */
 	bool bComputeOnlyIfConnected = false;
 
 	FUTKNodePinDefinition() = default;
 
-	/**
-	 * Convenience constructor used by DEFINE_PIN. If no explicit DefaultLayerName
-	 * is provided for an output pin, the pin is also used as the layer
-	 * name, so node implementations don't need to hard-code "Height"/"Mask".
-	 */
 	FUTKNodePinDefinition(
 		FName InName,
+		EUTKFieldType InFieldType,
 		bool bInInput,
 		bool bInRequired,
 		FName InDefaultLayerName = NAME_None,
 		bool bInComputeOnlyIfConnected = false)
 		: Name(InName)
+		  , FieldType(InFieldType)
 		  , bInput(bInInput)
 		  , bRequired(bInRequired)
 		  , DefaultLayerName(InDefaultLayerName.IsNone() && !bInInput ? InName : InDefaultLayerName)
@@ -60,45 +43,122 @@ struct FUTKNodePinDefinition
 };
 
 /**
- * Property definition used by nodes. Properties are backed by FInstancedStruct
- * so that different nodes can declare different struct types as parameters.
- */
-struct FUTKNodePropertyDefinition
-{
-	/** Property name (used as key in the node's RuntimeProperties map). */
-	FName Name;
-
-	/** Function that creates a default value instance. */
-	TFunction<FInstancedStruct()> Value;
-
-	/** Category name used by the property UI panel. */
-	FName Category;
-};
-
-/**
- * Complete node definition used by FUTKNodeFactory and UUTKNode.
+ * Declarative node definition.
  * 
- * Name / DisplayName / Category ae used for UI and registration.
- * Pins and Properties drive the graph/editor UI.
- * Process is the core node evaluation lambda using the new execution model.
+ * Production nodes describe their intent only. They do not allocate buffers,
+ * create texture, enqueue RDG work, or contain evaluation loops
  */
 struct FUTKNodeDefinition
 {
-	/** Internal type name (e.g., "Constant"). */
-	FString Name;
+	FName TypeId = NAME_None;
 
-	/** Display name for UI (e.g., "Constant"). */
-	FString DisplayName;
+	FText DisplayName;
+	FText Category;
+	FText Tooltip;
 
-	/** Category show in node palettes (e.g. "Math", "Erosion"). */
-	FString Category;
-
-	/** All input and output pin definitions for this node. */
 	TArray<FUTKNodePinDefinition> Pins;
 
-	/** All property definitions for this node. */
-	UClass* SettingsClass = nullptr;
+	TSubclassOf<UUTKNodeSettings> SettingsClass;
 
-	/** Processing function implementing the node's behavior. */
-	FUTKNodeProcessFunction ProcessFunction;
+	/** Resolved by FUTKOperatorRegistry during evaluation */
+	FName OperatorId = NAME_None;
+
+	EUTKNodeExposure Exposure = EUTKNodeExposure::Production;
+
+	bool IsValid(FString* OutError = nullptr) const
+	{
+		auto Fail = [OutError](const TCHAR* Message){
+			if (OutError)
+				*OutError = Message;
+
+			return false;
+		};
+
+		if (TypeId.IsNone())
+			return Fail(TEXT("Node type id is required."));
+
+		if (OperatorId.IsNone())
+			return Fail(TEXT("Node operator id is required."));
+
+		TSet<FName> SeenPins;
+
+		for (const FUTKNodePinDefinition& Pin : Pins)
+		{
+			if (Pin.Name.IsNone())
+				return Fail(TEXT("Node pin name is required."));
+
+			if (SeenPins.Contains(Pin.Name))
+				return Fail(TEXT("Node pin names must be unique."));
+
+			SeenPins.Add(Pin.Name);
+		}
+
+		return true;
+	}
+};
+
+class FUTKNodeSpecBuilder
+{
+public:
+	explicit FUTKNodeSpecBuilder(FName InTypeId)
+	{
+		Definition.TypeId = InTypeId;
+	}
+
+	FUTKNodeSpecBuilder& DisplayName(const TCHAR* InDisplayName)
+	{
+		Definition.DisplayName = FText::FromString(InDisplayName);
+		return *this;
+	}
+
+	FUTKNodeSpecBuilder& Category(const TCHAR* InCategory)
+	{
+		Definition.Category = FText::FromString(InCategory);
+		return *this;
+	}
+
+	FUTKNodeSpecBuilder& Tooltip(const TCHAR* InTooltip)
+	{
+		Definition.Tooltip = FText::FromString(InTooltip);
+		return *this;
+	}
+
+	template <typename TSettings>
+	FUTKNodeSpecBuilder& Settings()
+	{
+		Definition.SettingsClass = TSettings::StaticClass();
+		return *this;
+	}
+
+	FUTKNodeSpecBuilder& Input(FName Name, EUTKFieldType FieldType, bool bRequired = true, FName DefaultLayerName = NAME_None)
+	{
+		Definition.Pins.Emplace(Name, FieldType, true, bRequired, DefaultLayerName);
+		return *this;
+	}
+
+	FUTKNodeSpecBuilder& Output(FName Name, EUTKFieldType FieldType, bool bComputeOnlyIfConnected = false, FName DefaultLayerName = NAME_None)
+	{
+		Definition.Pins.Emplace(Name, FieldType, false, false, DefaultLayerName, bComputeOnlyIfConnected);
+		return *this;
+	}
+
+	FUTKNodeSpecBuilder& Operator(FName InOperatorId)
+	{
+		Definition.OperatorId = InOperatorId;
+		return *this;
+	}
+
+	FUTKNodeSpecBuilder& Internal()
+	{
+		Definition.Exposure = EUTKNodeExposure::Internal;
+		return *this;
+	}
+
+	FUTKNodeDefinition Build() const
+	{
+		return Definition;
+	}
+
+private:
+	FUTKNodeDefinition Definition;
 };

@@ -31,19 +31,34 @@ void UUTKNode::AllocateDefaultPins()
 
 FText UUTKNode::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	return FText::FromString(NodeDefinition.DisplayName);
+	return NodeDefinition.DisplayName;
 }
 
 void UUTKNode::SetDefinition(const FUTKNodeDefinition& InDefinition)
 {
 	NodeDefinition = InDefinition;
-	NodeType = FName(*InDefinition.Name);
+	NodeType = InDefinition.TypeId;
 	EnsureSettingsInstance(InDefinition);
 }
 
 const FUTKNodeDefinition& UUTKNode::GetDefinition() const
 {
 	return NodeDefinition;
+}
+
+const FUTKNodePinDefinition* UUTKNode::FindPinDefinition(FName PinName, EEdGraphPinDirection Direction) const
+{
+	const bool bInput = Direction == EGPD_Input;
+
+	for (const FUTKNodePinDefinition& Pin : NodeDefinition.Pins)
+	{
+		if (Pin.Name == PinName && Pin.bInput == bInput)
+		{
+			return &Pin;
+		}
+	}
+
+	return nullptr;
 }
 
 void UUTKNode::InvalidateCache()
@@ -73,11 +88,12 @@ FUTKNodeCacheEntry& UUTKNode::GetOrAddCacheEntry(FName OutputPinName)
 
 void UUTKNode::EnsureSettingsInstance(const FUTKNodeDefinition& Definition)
 {
-	if (Settings)
+	if (Settings && Definition.SettingsClass && Settings->IsA(Definition.SettingsClass))
 		return;
 
-	if (Definition.SettingsClass &&
-		Definition.SettingsClass->IsChildOf(UUTKNodeSettings::StaticClass()))
+	Settings = nullptr;
+
+	if (Definition.SettingsClass && Definition.SettingsClass->IsChildOf(UUTKNodeSettings::StaticClass()))
 	{
 		Settings = NewObject<UUTKNodeSettings>(
 			this,

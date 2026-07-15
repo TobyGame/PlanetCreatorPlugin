@@ -7,13 +7,13 @@ class FUTKNodeFactory
 public:
 	static FUTKNodeFactory& Get();
 
-	void RegisterNode(const FUTKNodeDefinition& Definition);
-	const TMap<FString, FUTKNodeDefinition>& GetAllNodes() const;
+	bool RegisterNode(const FUTKNodeDefinition& Definition);
+	const TMap<FName, FUTKNodeDefinition>& GetAllNodes() const;
 	void Clear();
-	const FUTKNodeDefinition* Find(const FString& Name) const;
+	const FUTKNodeDefinition* Find(FName TypeId) const;
 
-	bool GetDefinition(const FName& Type, FUTKNodeDefinition& OutDefinition) const;
+	bool GetDefinition(FName TypeId, FUTKNodeDefinition& OutDefinition) const;
 
 private:
-	TMap<FString, FUTKNodeDefinition> NodeMap;
+	TMap<FName, FUTKNodeDefinition> NodeMap;
 };

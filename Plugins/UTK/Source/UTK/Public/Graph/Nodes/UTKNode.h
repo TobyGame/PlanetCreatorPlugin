@@ -20,18 +20,15 @@ struct FUTKNodeCacheEntry
 
 	bool IsValidFor(const FUTKNodeExecutionContext& Ctx) const
 	{
-		if (!Terrain.IsValid())
+		if (!Terrain.IsValid() || !Terrain->IsValid())
 			return false;
 
 		if (CachedResolutionX != Ctx.ResolutionX ||
 			CachedResolutionY != Ctx.ResolutionY)
 			return false;
 
-		if (CachedGraphRevision != Ctx.GraphRevision ||
-			CachedPreviewRevision != Ctx.PreviewRevision)
-			return false;
-
-		return true;
+		return CachedGraphRevision == Ctx.GraphRevision ||
+			CachedPreviewRevision == Ctx.PreviewRevision;
 	}
 };
 
@@ -46,9 +43,6 @@ public:
 	UPROPERTY()
 	FName NodeType;
 
-	UPROPERTY()
-	TMap<FName, FInstancedStruct> RuntimeProperty;
-
 	virtual void AllocateDefaultPins() override;
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 
@@ -57,6 +51,7 @@ public:
 
 	void SetDefinition(const FUTKNodeDefinition& InDefinition);
 	const FUTKNodeDefinition& GetDefinition() const;
+	const FUTKNodePinDefinition* FindPinDefinition(FName PinName, EEdGraphPinDirection Direction) const;
 
 	const FUTKNodeDiagnostics& GetDiagnostics() const { return Diagnostics; }
 	FUTKNodeDiagnostics& AccessDiagnostics() { return Diagnostics; }
