@@ -3,6 +3,9 @@
 #include "Graph/Nodes/UTKNode.h"
 #include "Graph/Operators/UTKOperatorRegistry.h"
 #include "Misc/ScopeExit.h"
+#include "Core/UTKLogger.h"
+#include "Graph/Compute/UTKComputePlan.h"
+#include "Graph/Compute/UTKComputePlanCompiler.h"
 
 
 bool ResolveInputsForNode(const UUTKNode* Node, TArray<FUTKResolvedInput>& OutInputs)
@@ -229,8 +232,61 @@ namespace
 	}
 }
 
-TSharedPtr<FUTKTerrain> EvaluateNodeOutput(UUTKNode* Node, FName OutputPinName, FUTKNodeExecutionContext& Ctx)
+TSharedPtr<FUTKTerrain> EvaluateNodeOutput(UUTKNode* Node, FName OutputPinName, FUTKNodeExecutionContext& Context)
 {
+	if (!Node)
+	{
+		UE_LOG(LogUTKEditor, Error, TEXT("[UTK] Cannot evaluate a null node."));
+		return nullptr;
+	}
+
+	TSharedPtr<FUTKComputePlan> CompiledPlan = MakeShared<FUTKComputePlan>();
+
+	FString CompileError;
+
+	if (!FUTKComputePlanCompiler::Compile(Node, OutputPinName, Context, *CompiledPlan, CompileError))
+	{
+		const FString ErrorMessage = CompileError.IsEmpty() ? TEXT("Failed to compile the UTK compute plan.") : CompileError;
+
+		Node->AccessDiagnostics().SetMessage(ErrorMessage, true);
+
+		UE_LOG(
+			LogUTKEditor,
+			Error,
+			TEXT("[UTK] Compute-plan compilation failed for %s.%s: %s"),
+			*Node->GetDefinition().TypeId.ToString(),
+			*OutputPinName.ToString(),
+			*ErrorMessage);
+
+		Context.CompiledPlan.Reset();
+		return nullptr;
+	}
+
+	Context.CompiledPlan = CompiledPlan;
+
+	UE_LOG(LogUTKEditor,
+		Log,
+		TEXT("[UTK] Compiled plan for %s.%s: %d operations, %d fields, %d persistent."),
+		*Node->GetDefinition().TypeId.ToString(),
+		*OutputPinName.ToString(),
+		CompiledPlan->GetOperations().Num(),
+		CompiledPlan->GetFields().Num(),
+		CompiledPlan->GetPersistentFieldCount());
+
 	TSet<FGuid> EvaluationStack;
-	return EvaluateNodeOutput_Internal(Node, OutputPinName, Ctx, EvaluationStack);
+
+	TSharedPtr<FUTKTerrain> Result = EvaluateNodeOutput_Internal(Node, OutputPinName, Context, EvaluationStack);
+
+	if (!Result.IsValid())
+	{
+		UE_LOG(
+			LogUTKEditor,
+			Error,
+			TEXT("[UTK] Reference evaluation failed for %s.%s: %s"),
+			*Node->GetDefinition().TypeId.ToString(),
+			*OutputPinName.ToString(),
+			*Node->GetDiagnostics().Message);
+	}
+
+	return Result;
 }

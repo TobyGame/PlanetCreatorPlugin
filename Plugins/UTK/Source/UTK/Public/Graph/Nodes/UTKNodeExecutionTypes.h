@@ -4,10 +4,10 @@
 #include "Core/UTKTerrainTypes.h"
 
 class UUTKNode;
+class FUTKComputePlan;
 
 /**
- * Execution context passed to every node Process() call.
- * For now: resolution and seed.
+ * Execution context shared by graph compilation and evaluation.
  */
 struct UTK_API FUTKNodeExecutionContext
 {
@@ -17,6 +17,8 @@ struct UTK_API FUTKNodeExecutionContext
 
 	uint64 GraphRevision = 0;
 	uint64 PreviewRevision = 0;
+
+	TSharedPtr<FUTKComputePlan> CompiledPlan;
 
 	FUTKNodeExecutionContext() = default;
 

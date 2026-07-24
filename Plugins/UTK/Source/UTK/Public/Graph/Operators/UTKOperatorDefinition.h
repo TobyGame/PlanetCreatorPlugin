@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Graph/UTKFieldTypes.h"
 #include "Graph/Nodes/UTKNodeExecutionTypes.h"
+#include "Graph/Compute/UTKOperatorParameters.h"
 
 class UUTKNode;
 
@@ -55,6 +56,7 @@ struct FUTKOperatorDefinition
 
 	TArray<FUTKOperatorSlotDefinition> Inputs;
 	TArray<FUTKOperatorSlotDefinition> Outputs;
+	TArray<FUtkOperatorParametersDefinition> Parameters;
 
 	bool bPrototypeOnly = false;
 	bool bSupportsPointwiseFusion = false;
@@ -106,6 +108,15 @@ public:
 	FUTKOperatorSpecBuilder& Output(EUTKFieldType FieldType)
 	{
 		Definition.Outputs.Emplace(FUTKOperatorSlotDefinition{ FieldType });
+		return *this;
+	}
+
+	FUTKOperatorSpecBuilder& Parameter(FName ParameterName, FName SettingsPropertyName, EUTKParameterType ParameterType)
+	{
+		FUtkOperatorParametersDefinition& ParameterDefinition = Definition.Parameters.Emplace_GetRef();
+		ParameterDefinition.ParameterName = ParameterName;
+		ParameterDefinition.SettingsPropertyName = SettingsPropertyName;
+		ParameterDefinition.Type = ParameterType;
 		return *this;
 	}
 

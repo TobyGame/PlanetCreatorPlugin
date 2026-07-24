@@ -2,6 +2,7 @@
 
 #include "Core/UTKLogger.h"
 #include "Graph/Nodes/UTKNodeDefinition.h"
+#include "Graph/Compute/UTKOperatorParameters.h"
 
 FUTKOperatorRegistry& FUTKOperatorRegistry::Get()
 {
@@ -118,6 +119,13 @@ bool FUTKOperatorRegistry::ValidateNodeDefinition(const FUTKNodeDefinition& Node
 
 			return false;
 		}
+	}
+
+	if (!FUTKOperatorParameterPacker::ValidateDefinitions(NodeDefinition.SettingsClass, Operator->Parameters, OutError))
+	{
+		OutError = FString::Printf(TEXT("Node '%s' has an invalid parameter binding: %s"), *NodeDefinition.TypeId.ToString(), *OutError);
+
+		return false;
 	}
 
 	return true;

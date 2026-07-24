@@ -55,11 +55,11 @@ bool UTK_API ResolveInputsForNode(
  * 
  * @param Node : the graph node to evaluate
  * @param OutputPinName : which output pin to request (e.g., "Result")
- * @param Ctx : execution context (resolution, seed, revisions)
+ * @param Context : execution context (resolution, seed, revisions)
  * 
  * @return Returns a shared pointer to FUTKTerrain or null on error
  */
 TSharedPtr<FUTKTerrain> UTK_API EvaluateNodeOutput(
 	UUTKNode* Node,
 	FName OutputPinName,
-	FUTKNodeExecutionContext& Ctx);
+	FUTKNodeExecutionContext& Context);

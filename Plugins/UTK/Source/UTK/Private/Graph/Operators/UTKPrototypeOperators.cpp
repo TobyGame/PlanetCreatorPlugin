@@ -200,6 +200,10 @@ void RegisterPrototypeOperators()
 		FUTKOperatorSpecBuilder(TEXT("UTK.Internal.Prototype.Constant"))
 		.Family(EUTKKernelFamily::ProceduralGenerator)
 		.Output(EUTKFieldType::Scalar)
+		.Parameter(
+			TEXT("Value"),
+			GET_MEMBER_NAME_CHECKED(UUTKConstantSettings, Value),
+			EUTKParameterType::Float)
 		.PrototypeOnly()
 		.ReferenceEvaluator(&EvaluatePrototypeConstant)
 		.Build());
@@ -210,6 +214,14 @@ void RegisterPrototypeOperators()
 		.Input(EUTKFieldType::Scalar)
 		.Input(EUTKFieldType::Scalar)
 		.Output(EUTKFieldType::Scalar)
+		.Parameter(
+			TEXT("Ratio"),
+			GET_MEMBER_NAME_CHECKED(UUTKCombineSettings, Ratio),
+			EUTKParameterType::Float)
+		.Parameter(
+			TEXT("SwapInputs"),
+			GET_MEMBER_NAME_CHECKED(UUTKCombineSettings, bSwapInputs),
+			EUTKParameterType::Bool)
 		.PrototypeOnly()
 		.SupportsPointwiseFusion()
 		.ReferenceEvaluator(&EvaluatePrototypeCombine)

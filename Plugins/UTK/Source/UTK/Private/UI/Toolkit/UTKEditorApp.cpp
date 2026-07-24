@@ -571,18 +571,23 @@ void FUTKEditorApp::OnWorkingGraphChanged(const FEdGraphEditAction& Action)
 {
 	if (bIsClosing || bSuppressChangeNotifications) return;
 
-	MarkGraphDirty();
-
 	const uint32 NewHash = ComputeWorkingGraphConnectionHash();
 
-	if (!bHasCachedGraphConnectionHash || NewHash != CachedGraphConnectionHash)
-	{
-		CachedGraphConnectionHash = NewHash;
-		bHasCachedGraphConnectionHash = true;
+	const bool bTopologyChanged = bHasCachedGraphConnectionHash || NewHash != CachedGraphConnectionHash;
 
-		if (SelectedNode.IsValid())
-			EvaluateCurrentSelectionForPreview();
+	if (!bTopologyChanged)
+	{
+		MarkGraphDirty();
+		return;
 	}
+
+	CachedGraphConnectionHash = NewHash;
+	bHasCachedGraphConnectionHash = true;
+
+	MarkGraphDirty();
+
+	if (SelectedNode.IsValid() || FocusedNode.IsValid())
+		EvaluateCurrentSelectionForPreview();
 }
 
 void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FPropertyChangedEvent& Event)
@@ -591,52 +596,50 @@ void FUTKEditorApp::OnWorkingObjectPropertyChanged(UObject* Object, struct FProp
 
 	if (!WorkingObject.Get() || !Object) return;
 
+	const bool bBelongsToWorkingAsset = Object == WorkingObject.Get() || Object->IsIn(WorkingObject.Get());
+
+	if (!bBelongsToWorkingAsset) return;
+
 	bool bShouldReevaluatePreview = false;
 
 	if (UUTKNodeSettings* Settings = Cast<UUTKNodeSettings>(Object))
 	{
-		if (UUTKNode* Selected = SelectedNode.Get())
+		if (UUTKNode* Owner = Cast<UUTKNode>(Settings->GetOuter()))
 		{
-			if (Selected->GetSettings() == Settings)
-			{
-				Selected->InvalidateCache();
-				bShouldReevaluatePreview = true;
-			}
+			Owner->InvalidateCache();
 		}
+		bShouldReevaluatePreview = true;
 	}
 
-	if (Object == WorkingObject.Get())
+	if (Object == WorkingObject.Get() && Event.Property)
 	{
-		if (Event.Property)
+		const FName PropertyName = Event.Property->GetFName();
+
+		const bool bPreviewPropertyChanged =
+			PropertyName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewResolution) ||
+			PropertyName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewSeed) ||
+			PropertyName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewBackend) ||
+			PropertyName == GET_MEMBER_NAME_CHECKED(UUTKAsset, bPreviewUseGpuHeightTets) ||
+			PropertyName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewGpuHeightTestFrequency) ||
+			PropertyName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewGpuHeightTestRadius) ||
+			PropertyName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewGpuHeightTestPhase) ||
+			PropertyName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewWidthMeters) ||
+			PropertyName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewMaxHeightMeters);
+
+		if (bPreviewPropertyChanged)
 		{
-			const FName PropName = Event.Property->GetFName();
+			if (UUTKAsset* Asset = Cast<UUTKAsset>(Object))
+				Asset->RefreshPreviewDerivedValues();
 
-			if (PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewResolution) ||
-				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewSeed) ||
-				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewBackend) ||
-				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, bPreviewUseGpuHeightTets) ||
-				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewGpuHeightTestFrequency) ||
-				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewGpuHeightTestRadius) ||
-				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewGpuHeightTestPhase) ||
-				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewWidthMeters) ||
-				PropName == GET_MEMBER_NAME_CHECKED(UUTKAsset, PreviewMaxHeightMeters))
-			{
-				if (UUTKAsset* Asset = Cast<UUTKAsset>(Object))
-					Asset->RefreshPreviewDerivedValues();
-
-				MarkPreviewSettingsChanged();
-				bShouldReevaluatePreview = true;
-			}
+			MarkPreviewSettingsChanged();
+			bShouldReevaluatePreview = true;
 		}
 	}
+
+	MarkGraphDirty();
 
 	if (bShouldReevaluatePreview)
 		EvaluateCurrentSelectionForPreview();
-
-	if (Object == WorkingObject.Get() || Object->IsIn(WorkingObject.Get()))
-	{
-		MarkGraphDirty();
-	}
 }
 
 void FUTKEditorApp::OnObjectTransected(UObject* Object, const class FTransactionObjectEvent& Event)

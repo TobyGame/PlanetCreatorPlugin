@@ -27,7 +27,7 @@ struct FUTKNodeCacheEntry
 			CachedResolutionY != Ctx.ResolutionY)
 			return false;
 
-		return CachedGraphRevision == Ctx.GraphRevision ||
+		return CachedGraphRevision == Ctx.GraphRevision &&
 			CachedPreviewRevision == Ctx.PreviewRevision;
 	}
 };
